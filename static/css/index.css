@@ -1,0 +1,29 @@
+/**
+ * StreamVault - Index Page Stylesheet
+ * Hero styling, Netflix-style rank numbers, and carousel indicators
+ */
+
+/* Netflix Rank Number Style for Trending Row */
+.rank-number {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    font-size: 7.5rem;
+    line-height: 0.8;
+    -webkit-text-stroke: 2.5px rgba(139, 92, 246, 0.4);
+    color: transparent;
+    text-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+    user-select: none;
+}
+
+@media (max-width: 640px) {
+    .rank-number {
+        font-size: 5.5rem;
+        -webkit-text-stroke: 2px rgba(139, 92, 246, 0.4);
+    }
+}
+
+/* Hero Carousel Indicator Transition */
+.hero-indicator {
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

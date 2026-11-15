@@ -11,311 +11,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS CDN & Custom Config -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-                        heading: ['"Outfit"', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        stream: {
-                            bg: '#080A0F',
-                            secondary: '#0D111B',
-                            surface: '#141A27',
-                            elevated: '#1B2232',
-                            card: '#141A27',
-                            cardHover: '#1B2232',
-                            border: 'rgba(255, 255, 255, 0.08)',
-                            borderLight: 'rgba(255, 255, 255, 0.08)',
-                            borderHover: 'rgba(255, 255, 255, 0.16)',
-                            primary: '#8B5CF6',
-                            primaryHover: '#7C3AED',
-                            accent: '#3B82F6',
-                            accentHover: '#2563EB',
-                            cyan: '#3B82F6',
-                            cyanHover: '#2563EB',
-                            text: '#F8FAFC',
-                            textSecondary: '#94A3B8',
-                            muted: '#64748B',
-                            subtle: '#475569'
-                        }
-                    },
-                    boxShadow: {
-                        'glow-primary': '0 4px 24px -2px rgba(139, 92, 246, 0.35)',
-                        'glow-accent': '0 4px 24px -2px rgba(59, 130, 246, 0.3)',
-                        'glow-cyan': '0 4px 24px -2px rgba(59, 130, 246, 0.3)',
-                        'card-hover': '0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 25px -5px rgba(139, 92, 246, 0.18)',
-                        'cinema': '0 25px 60px -15px rgba(0, 0, 0, 0.95)',
-                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
-                    },
-                    animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-6px)' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="{{ url_for('static', filename='js/tailwind-config.js') }}"></script>
 
-    <!-- Font Awesome 6 Pro & Free Icons -->
+    <!-- Font Awesome 6 Free Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Hls.js for HLS Stream Playback -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
-    <style>
-        body {
-            background-color: #080A0F;
-            color: #FFFFFF;
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-            overflow-x: hidden;
-        }
-
-        /* Modern Netflix/Plex Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 7px;
-            height: 7px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #080A0F;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1f2638;
-            border-radius: 9999px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #8B5CF6;
-        }
-
-        /* Glassmorphism helpers - Refined Dark Cinematic */
-        .glass-nav {
-            background: rgba(8, 10, 15, 0.8);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .glass-card {
-            background: #141A27;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .glass-card:hover {
-            border-color: rgba(139, 92, 246, 0.4);
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8), 0 0 25px -5px rgba(139, 92, 246, 0.18);
-        }
-        .glass-panel {
-            background: rgba(20, 26, 39, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .glass-modal {
-            background: rgba(13, 17, 27, 0.94);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9);
-        }
-
-        /* Horizontal Carousel Hide Scrollbars */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        /* Aspect ratio video box */
-        .aspect-video-box {
-            position: relative;
-            padding-bottom: 56.25%;
-            height: 0;
-            overflow: hidden;
-            background-color: #000000;
-        }
-        .aspect-video-box iframe,
-        .aspect-video-box video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Thumbnail layouts */
-        .thumb-box-wide {
-            position: relative;
-            padding-bottom: 56.25%;
-            height: 0;
-            overflow: hidden;
-            background-color: #0D111B;
-        }
-        .thumb-box-wide img {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .thumb-box-tall {
-            height: 380px;
-            position: relative;
-            overflow: hidden;
-            background-color: #0D111B;
-        }
-        @media (max-width: 640px) {
-            .thumb-box-tall {
-                height: 270px;
-            }
-        }
-        .thumb-box-tall img {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .thumb-box-fit {
-            height: 320px;
-            position: relative;
-            overflow: hidden;
-            background-color: #080A0F;
-        }
-        .thumb-box-fit img {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        /* Netflix Rank Number Style */
-        .rank-number {
-            font-family: 'Outfit', sans-serif;
-            font-weight: 900;
-            font-size: 7.5rem;
-            line-height: 0.8;
-            -webkit-text-stroke: 2.5px rgba(139, 92, 246, 0.4);
-            color: transparent;
-            text-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
-            user-select: none;
-        }
-
-        /* Cinema ambient glow effect */
-        .cinema-glow {
-            box-shadow: 0 0 70px -10px rgba(139, 92, 246, 0.2), 0 0 100px -20px rgba(59, 130, 246, 0.15);
-        }
-
-        /* ========================================================================= */
-        /* BUTTON HIERARCHY: PRIMARY (PLAY), SECONDARY (OPEN SOURCE), TERTIARY       */
-        /* ========================================================================= */
-        /* Primary: PLAY (dominant visual action, purple-to-blue gradient) */
-        .btn-action-play {
-            background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 50%, #3B82F6 100%);
-            color: #FFFFFF;
-            box-shadow: 0 4px 20px -2px rgba(139, 92, 246, 0.35);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .btn-action-play:hover {
-            transform: scale(1.04);
-            box-shadow: 0 6px 26px 0 rgba(139, 92, 246, 0.5), 0 0 20px -2px rgba(59, 130, 246, 0.3);
-            filter: brightness(1.06);
-        }
-        .btn-action-play:active {
-            transform: scale(0.97);
-        }
-
-        /* Secondary: OPEN SOURCE (subtle glassmorphism, transparent dark, thin border) */
-        .btn-action-glass {
-            background: rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #F8FAFC;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .btn-action-glass:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(255, 255, 255, 0.18);
-            color: #FFFFFF;
-            transform: scale(1.02);
-            box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4);
-        }
-        .btn-action-glass:active {
-            transform: scale(0.97);
-        }
-
-        /* Tertiary: Utility Actions (Favorite, Share, Settings) */
-        .btn-action-tertiary {
-            background: transparent;
-            color: #94A3B8;
-            border: 1px solid transparent;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .btn-action-tertiary:hover {
-            background: rgba(255, 255, 255, 0.06);
-            color: #F8FAFC;
-            border-color: rgba(255, 255, 255, 0.08);
-            transform: scale(1.05);
-        }
-        .btn-action-tertiary:active {
-            transform: scale(0.96);
-        }
-
-        .btn-action-icon {
-            min-width: 44px;
-            min-height: 44px;
-            width: 44px;
-            height: 44px;
-            border-radius: 9999px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Card Hover Action Transition */
-        .card-actions-overlay {
-            opacity: 0;
-            transform: translateY(8px);
-            transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .group:hover .card-actions-overlay {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Line clamp utilities */
-        .line-clamp-1 {
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-    </style>
+    <!-- StreamVault Main Stylesheet (Separated CSS) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen flex flex-col bg-stream-bg text-stream-text selection:bg-stream-primary selection:text-white">
@@ -326,12 +33,12 @@
     <!-- Sticky Navigation Bar -->
     <header class="sticky top-0 z-40 glass-nav transition-all duration-300">
         <div class="max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-10">
-            <div class="flex items-center justify-between h-18 sm:h-20 gap-4">
+            <div class="flex items-center justify-between h-16 sm:h-20 gap-4">
                 
                 <!-- Left: Branding & Main Navigation -->
                 <div class="flex items-center gap-6 lg:gap-10">
                     <!-- Website Logo -->
-                    <a href="{{ url_for('index', thread=stats.active_thread) }}" class="flex items-center gap-3.5 group focus:outline-none">
+                    <a href="{{ url_for('index', thread=stats.active_thread) }}" class="flex items-center gap-3.5 group focus:outline-none" aria-label="StreamVault Home">
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-stream-primary via-[#6366F1] to-stream-accent p-0.5 shadow-glow-primary group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
                             <div class="w-full h-full bg-[#080A0F] rounded-[10px] flex items-center justify-center">
                                 <i class="fa-solid fa-play text-transparent bg-clip-text bg-gradient-to-tr from-stream-primary to-stream-accent text-sm pl-0.5"></i>
@@ -348,16 +55,16 @@
                     </a>
 
                     <!-- Desktop Navigation Links -->
-                    <nav class="hidden md:flex items-center gap-1.5 text-sm font-medium">
+                    <nav class="hidden md:flex items-center gap-1.5 text-sm font-medium" aria-label="Navigasi Utama">
                         <a href="{{ url_for('index', thread=stats.active_thread) }}" 
-                           class="px-4 py-2 rounded-xl transition flex items-center gap-2 {% if request.endpoint == 'index' and not request.args.get('watchlist') and not request.args.get('sort') %}bg-white/[0.08] text-white font-bold border border-white/[0.08] shadow-sm{% else %}text-slate-300 hover:text-white hover:bg-white/5{% endif %}">
+                           class="px-4 py-2 rounded-xl transition flex items-center gap-2 {% if request.endpoint in ('index', 'web.index') and not request.args.get('watchlist') and not request.args.get('sort') %}bg-white/[0.08] text-white font-bold border border-white/[0.08] shadow-sm{% else %}text-slate-300 hover:text-white hover:bg-white/5{% endif %}">
                             <i class="fa-solid fa-house text-xs text-stream-primary"></i>
                             <span>Home</span>
                         </a>
                         
                         <!-- Channels Dropdown -->
                         <div class="relative group">
-                            <button class="px-4 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center gap-1.5 focus:outline-none">
+                            <button type="button" class="px-4 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center gap-1.5 focus:outline-none" aria-expanded="false" aria-haspopup="true">
                                 <i class="fa-solid fa-shapes text-xs text-stream-accent"></i>
                                 <span>Channels</span>
                                 <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 group-hover:rotate-180 transition-transform"></i>
@@ -386,11 +93,11 @@
                             <span>Recently Added</span>
                         </a>
 
-                        <button onclick="toggleWatchlistModal()" 
+                        <button type="button" onclick="toggleWatchlistModal()" 
                            class="px-4 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center gap-2 relative">
                             <i class="fa-solid fa-heart text-xs text-rose-500"></i>
                             <span>Watchlist</span>
-                            <span id="navWatchlistBadge" class="hidden px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500 text-white font-mono">0</span>
+                            <span id="navWatchlistBadge" class="hidden px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white font-mono">0</span>
                         </button>
                     </nav>
                 </div>
@@ -399,7 +106,7 @@
                 <div class="flex items-center gap-2.5 sm:gap-3.5">
                     
                     <!-- Search Input Trigger Button (Opens Live Search Modal) -->
-                    <button onclick="openSearchModal()" 
+                    <button type="button" onclick="openSearchModal()" 
                             class="flex items-center justify-between w-44 sm:w-60 md:w-72 px-4 py-2 rounded-full bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] hover:border-stream-primary/40 text-stream-muted hover:text-white text-xs transition shadow-sm group">
                         <div class="flex items-center gap-2.5 truncate">
                             <i class="fa-solid fa-magnifying-glass text-stream-primary group-hover:scale-110 transition-transform"></i>
@@ -408,7 +115,7 @@
                         <kbd class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#080A0F] text-slate-400 border border-white/[0.08]">Ctrl+K</kbd>
                     </button>
 
-                    <!-- Realtime Scraper Live Indicator Badge (Understated & Cinematic) -->
+                    <!-- Realtime Scraper Live Indicator Badge -->
                     <div class="hidden lg:flex items-center">
                         {% if stats.is_live %}
                         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title="Scraper terhubung langsung ke browser Chrome CDP port 9222">
@@ -427,13 +134,13 @@
                     </div>
 
                     <!-- Watchlist Quick Icon (Mobile) -->
-                    <button onclick="toggleWatchlistModal()" class="md:hidden w-10 h-10 rounded-xl bg-stream-surface border border-stream-borderLight text-rose-400 hover:text-rose-300 flex items-center justify-center relative">
+                    <button type="button" onclick="toggleWatchlistModal()" class="md:hidden w-10 h-10 rounded-xl bg-stream-surface border border-stream-borderLight text-rose-400 hover:text-rose-300 flex items-center justify-center relative" aria-label="Buka Watchlist">
                         <i class="fa-solid fa-heart text-xs"></i>
                         <span id="navWatchlistBadgeMobile" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold bg-rose-500 text-white flex items-center justify-center font-mono">0</span>
                     </button>
 
                     <!-- Mobile Hamburger Menu Button -->
-                    <button onclick="toggleMobileMenu()" class="md:hidden w-10 h-10 rounded-xl bg-stream-surface border border-stream-borderLight text-slate-200 hover:text-white flex items-center justify-center focus:outline-none">
+                    <button type="button" onclick="toggleMobileMenu()" class="md:hidden w-10 h-10 rounded-xl bg-stream-surface border border-stream-borderLight text-slate-200 hover:text-white flex items-center justify-center focus:outline-none" aria-label="Buka Menu">
                         <i class="fa-solid fa-bars text-sm"></i>
                     </button>
                 </div>
@@ -448,7 +155,7 @@
             <div class="space-y-6">
                 <div class="flex items-center justify-between pb-4 border-b border-stream-borderLight">
                     <span class="font-heading font-black text-xl text-white">Stream<span class="text-stream-primary">Vault</span></span>
-                    <button onclick="toggleMobileMenu()" class="w-8 h-8 rounded-lg bg-stream-card text-slate-400 hover:text-white flex items-center justify-center">
+                    <button type="button" onclick="toggleMobileMenu()" class="w-8 h-8 rounded-lg bg-stream-card text-slate-400 hover:text-white flex items-center justify-center" aria-label="Tutup Menu">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -461,7 +168,7 @@
                     <a href="{{ url_for('index', thread=stats.active_thread, sort='newest') }}" class="flex items-center gap-3 p-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white">
                         <i class="fa-solid fa-clock-rotate-left text-stream-muted"></i> Recently Added
                     </a>
-                    <button onclick="toggleWatchlistModal(); toggleMobileMenu();" class="w-full flex items-center gap-3 p-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white text-left">
+                    <button type="button" onclick="toggleWatchlistModal(); toggleMobileMenu();" class="w-full flex items-center gap-3 p-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white text-left">
                         <i class="fa-solid fa-heart text-rose-500"></i> Watchlist Saya
                     </button>
                 </div>
@@ -494,14 +201,14 @@
     </main>
 
     <!-- Global Video Detail Quick-View Modal -->
-    <div id="videoDetailModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 transition-all duration-300">
+    <div id="videoDetailModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 transition-all duration-300" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="fixed inset-0 bg-black/85 backdrop-blur-md" onclick="closeVideoDetailModal()"></div>
         <div class="relative glass-panel rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-stream-borderLight z-10 animate-float">
             <!-- Modal Header Banner -->
             <div class="relative aspect-video-box bg-slate-950">
-                <img id="modalThumbnail" src="" alt="Thumbnail" class="w-full h-full object-cover">
+                <img id="modalThumbnail" src="{{ url_for('static', filename='placeholder.svg') }}" alt="Thumbnail" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-stream-surface via-stream-surface/40 to-transparent"></div>
-                <button onclick="closeVideoDetailModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition border border-white/10 z-20">
+                <button type="button" onclick="closeVideoDetailModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition border border-white/10 z-20" aria-label="Tutup Preview">
                     <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
                 <div class="absolute bottom-4 left-6 right-6 space-y-2">
@@ -533,7 +240,7 @@
                 <!-- Premium VideoActionGroup (Watch Now, Open Source, Add to Favorites, Share) -->
                 <div class="flex items-center gap-3 pt-3 flex-wrap sm:flex-nowrap">
                     <!-- Primary Watch Now Button -->
-                    <a id="modalPlayBtn" href="#" class="flex-1 min-w-[140px] h-12 px-6 rounded-full btn-action-play font-bold text-sm flex items-center justify-center gap-2.5 group">
+                    <a id="modalPlayBtn" href="javascript:void(0)" class="flex-1 min-w-[140px] h-12 px-6 rounded-full btn-action-play font-bold text-sm flex items-center justify-center gap-2.5 group">
                         <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <i class="fa-solid fa-play text-white text-[10px] pl-0.5"></i>
                         </div>
@@ -541,18 +248,18 @@
                     </a>
                     
                     <!-- Secondary Open Source Glass Button -->
-                    <button id="modalOpenSourceBtn" onclick="openModalSource(event)" class="h-12 px-5 rounded-full btn-action-glass font-bold text-xs sm:text-sm flex items-center justify-center gap-2 group" title="Open original source in new tab">
+                    <button type="button" id="modalOpenSourceBtn" onclick="openModalSource(event)" class="h-12 px-5 rounded-full btn-action-glass font-bold text-xs sm:text-sm flex items-center justify-center gap-2 group" title="Open original source in new tab">
                         <i class="fa-solid fa-arrow-up-right-from-square text-slate-300 group-hover:text-white text-xs group-hover:scale-105 transition-transform"></i>
                         <span>Open Source</span>
                     </button>
 
                     <!-- Add to Favorites Tertiary Button (44x44px touch target) -->
-                    <button id="modalFavBtn" onclick="toggleModalWatchlist()" class="btn-action-icon btn-action-tertiary group" title="Add to Favorites">
+                    <button type="button" id="modalFavBtn" onclick="toggleModalWatchlist()" class="btn-action-icon btn-action-tertiary group" title="Add to Favorites" aria-label="Add to Favorites">
                         <i class="fa-regular fa-heart text-base text-rose-500 group-hover:scale-110 transition-transform"></i>
                     </button>
 
                     <!-- Share / Copy Link Tertiary Button (44x44px touch target) -->
-                    <button id="modalCopyBtn" onclick="copyModalLink()" class="btn-action-icon btn-action-tertiary group" title="Share & Copy Link">
+                    <button type="button" id="modalCopyBtn" onclick="copyModalLink()" class="btn-action-icon btn-action-tertiary group" title="Share & Copy Link" aria-label="Share Link">
                         <i class="fa-regular fa-share-from-square text-sm text-slate-300 group-hover:text-white group-hover:scale-110 transition-transform"></i>
                     </button>
                 </div>
@@ -561,7 +268,7 @@
     </div>
 
     <!-- Global Live Search Overlay Modal -->
-    <div id="searchModal" class="fixed inset-0 z-50 hidden flex items-start justify-center pt-20 p-4 transition-all duration-300">
+    <div id="searchModal" class="fixed inset-0 z-50 hidden items-start justify-center pt-20 p-4 transition-all duration-300" role="dialog" aria-modal="true" aria-labelledby="globalSearchInput">
         <div class="fixed inset-0 bg-black/85 backdrop-blur-md" onclick="closeSearchModal()"></div>
         <div class="relative glass-panel rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-stream-borderLight z-10 space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-stream-borderLight">
@@ -569,9 +276,10 @@
                     <i class="fa-solid fa-magnifying-glass text-stream-primary text-lg"></i>
                     <input id="globalSearchInput" type="text" placeholder="Ketik judul video, uploader, atau ID..." 
                            class="w-full bg-transparent text-white placeholder-stream-muted text-base sm:text-lg focus:outline-none font-medium"
-                           oninput="handleGlobalSearch(this.value)">
+                           oninput="handleGlobalSearch(this.value)"
+                           aria-label="Cari video">
                 </div>
-                <button onclick="closeSearchModal()" class="w-8 h-8 rounded-lg bg-stream-card text-slate-400 hover:text-white flex items-center justify-center">
+                <button type="button" onclick="closeSearchModal()" class="w-8 h-8 rounded-lg bg-stream-card text-slate-400 hover:text-white flex items-center justify-center" aria-label="Tutup Pencarian">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -587,17 +295,17 @@
     </div>
 
     <!-- Global Watchlist Drawer Modal -->
-    <div id="watchlistModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300">
+    <div id="watchlistModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300" role="dialog" aria-modal="true" aria-labelledby="watchlistHeading">
         <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="toggleWatchlistModal()"></div>
         <div class="fixed inset-y-0 right-0 max-w-md w-full glass-panel p-6 shadow-2xl border-l border-stream-borderLight flex flex-col justify-between z-10">
             <div class="space-y-4">
                 <div class="flex items-center justify-between pb-4 border-b border-stream-borderLight">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-heart text-rose-500 text-lg"></i>
-                        <h2 class="font-heading font-black text-xl text-white">Watchlist Saya</h2>
+                        <h2 id="watchlistHeading" class="font-heading font-black text-xl text-white">Watchlist Saya</h2>
                         <span id="watchlistCountPill" class="px-2 py-0.5 rounded-full text-xs font-mono bg-stream-primary/20 text-stream-primary">0</span>
                     </div>
-                    <button onclick="toggleWatchlistModal()" class="w-8 h-8 rounded-lg bg-stream-card text-slate-400 hover:text-white flex items-center justify-center">
+                    <button type="button" onclick="toggleWatchlistModal()" class="w-8 h-8 rounded-lg bg-stream-card text-slate-400 hover:text-white flex items-center justify-center" aria-label="Tutup Watchlist">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -608,10 +316,10 @@
             </div>
 
             <div class="pt-4 border-t border-stream-borderLight flex items-center justify-between">
-                <button onclick="clearWatchlist()" class="text-xs text-rose-400 hover:text-rose-300 font-medium">
+                <button type="button" onclick="clearWatchlist()" class="text-xs text-rose-400 hover:text-rose-300 font-medium">
                     <i class="fa-solid fa-trash-can mr-1"></i> Bersihkan Semua
                 </button>
-                <button onclick="toggleWatchlistModal()" class="px-4 py-2 rounded-xl bg-stream-card text-xs text-slate-200 hover:text-white font-medium">
+                <button type="button" onclick="toggleWatchlistModal()" class="px-4 py-2 rounded-xl bg-stream-card text-xs text-slate-200 hover:text-white font-medium">
                     Tutup
                 </button>
             </div>
@@ -696,443 +404,8 @@
         </div>
     </footer>
 
-    <!-- Global Client-side Utilities Script -->
-    <script>
-        // Watchlist LocalStorage Management
-        const WATCHLIST_KEY = "streamvault_watchlist";
-        const HISTORY_KEY = "streamvault_history";
-
-        function getWatchlist() {
-            try {
-                return JSON.parse(localStorage.getItem(WATCHLIST_KEY)) || [];
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function saveWatchlist(items) {
-            localStorage.setItem(WATCHLIST_KEY, JSON.stringify(items));
-            updateWatchlistBadges();
-        }
-
-        function isWatchlisted(id) {
-            const list = getWatchlist();
-            return list.some(item => item.id == id);
-        }
-
-        function toggleWatchlistItem(video) {
-            let list = getWatchlist();
-            const idx = list.findIndex(item => item.id == video.id);
-            if (idx >= 0) {
-                list.splice(idx, 1);
-                showToast("Dihapus dari Watchlist", "info");
-            } else {
-                list.unshift({
-                    id: video.id,
-                    display_title: video.display_title,
-                    thumbnail_url: video.thumbnail_url,
-                    provider: video.provider,
-                    quality: video.quality || "4K UHD",
-                    duration: video.duration || "12:00",
-                    thread_key: video.thread_key || "live_show"
-                });
-                showToast("Ditambahkan ke Watchlist!", "success");
-            }
-            saveWatchlist(list);
-            renderWatchlistDrawer();
-            return isWatchlisted(video.id);
-        }
-
-        function updateWatchlistBadges() {
-            const list = getWatchlist();
-            const count = list.length;
-            const b1 = document.getElementById("navWatchlistBadge");
-            const b2 = document.getElementById("navWatchlistBadgeMobile");
-            const b3 = document.getElementById("watchlistCountPill");
-
-            if (b1) {
-                b1.textContent = count;
-                b1.classList.toggle("hidden", count === 0);
-            }
-            if (b2) {
-                b2.textContent = count;
-                b2.classList.toggle("hidden", count === 0);
-            }
-            if (b3) {
-                b3.textContent = count;
-            }
-        }
-
-        function toggleWatchlistModal() {
-            const m = document.getElementById("watchlistModal");
-            if (m) {
-                m.classList.toggle("hidden");
-                if (!m.classList.contains("hidden")) {
-                    renderWatchlistDrawer();
-                }
-            }
-        }
-
-        function renderWatchlistDrawer() {
-            const container = document.getElementById("watchlistItemsList");
-            if (!container) return;
-            const items = getWatchlist();
-            if (items.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-12 text-stream-muted space-y-2">
-                        <i class="fa-regular fa-heart text-3xl text-stream-border"></i>
-                        <p class="text-sm">Belum ada video yang disimpan.</p>
-                        <p class="text-xs">Klik tombol hati pada kartu video untuk menyimpannya di sini.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = items.map(v => `
-                <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-stream-card hover:bg-stream-cardHover border border-stream-borderLight transition group">
-                    <a href="/watch/${v.id}" class="w-20 h-14 rounded-xl overflow-hidden bg-black flex-shrink-0 relative">
-                        <img src="${v.thumbnail_url || '/static/placeholder.svg'}" alt="${v.display_title}" class="w-full h-full object-cover">
-                        <span class="absolute bottom-1 right-1 px-1 py-0.2 rounded text-[8px] font-mono bg-black/70 text-white font-bold">${v.duration || '12:00'}</span>
-                    </a>
-                    <div class="flex-1 min-w-0">
-                        <a href="/watch/${v.id}" class="text-xs font-bold text-white hover:text-stream-cyan transition line-clamp-1">
-                            ${v.display_title}
-                        </a>
-                        <div class="flex items-center gap-1.5 mt-1 text-[10px] text-stream-muted">
-                            <span class="text-stream-primary font-bold">${v.quality || '4K'}</span>
-                            <span>•</span>
-                            <span class="uppercase">${v.provider || 'video'}</span>
-                        </div>
-                    </div>
-                    <button onclick="removeWatchlistItem(${v.id})" class="p-2 text-slate-400 hover:text-rose-400 transition" title="Hapus">
-                        <i class="fa-solid fa-trash-can text-xs"></i>
-                    </button>
-                </div>
-            `).join("");
-        }
-
-        function removeWatchlistItem(id) {
-            let list = getWatchlist().filter(item => item.id != id);
-            saveWatchlist(list);
-            renderWatchlistDrawer();
-            showToast("Video dihapus dari Watchlist", "info");
-        }
-
-        function clearWatchlist() {
-            if (confirm("Kosongkan semua daftar Watchlist?")) {
-                saveWatchlist([]);
-                renderWatchlistDrawer();
-                showToast("Watchlist dikosongkan", "info");
-            }
-        }
-
-        // Toast notification system
-        function showToast(message, type = "info") {
-            const container = document.getElementById("toastContainer");
-            if (!container) return;
-
-            const toast = document.createElement("div");
-            toast.className = `pointer-events-auto px-4 py-3 rounded-2xl glass-panel border shadow-2xl flex items-center gap-3 text-xs font-semibold text-white transition-all transform duration-300 translate-y-4 opacity-0 ${
-                type === 'success' ? 'border-emerald-500/40 text-emerald-300' : 
-                type === 'error' ? 'border-rose-500/40 text-rose-300' : 'border-stream-primary/40 text-purple-200'
-            }`;
-
-            const icon = type === 'success' ? 'fa-circle-check text-emerald-400' : 
-                         type === 'error' ? 'fa-circle-exclamation text-rose-400' : 'fa-bell text-stream-primary';
-
-            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.classList.remove("translate-y-4", "opacity-0");
-            }, 10);
-
-            setTimeout(() => {
-                toast.classList.add("opacity-0", "translate-y-2");
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // Live Search Modal
-        let searchTimeout = null;
-        function openSearchModal() {
-            const m = document.getElementById("searchModal");
-            const inp = document.getElementById("globalSearchInput");
-            if (m) {
-                m.classList.remove("hidden");
-                if (inp) {
-                    inp.focus();
-                }
-            }
-        }
-
-        function closeSearchModal() {
-            const m = document.getElementById("searchModal");
-            if (m) m.classList.add("hidden");
-        }
-
-        function handleGlobalSearch(query) {
-            clearTimeout(searchTimeout);
-            const box = document.getElementById("searchResultsBox");
-            if (!query.trim()) {
-                box.innerHTML = `
-                    <div class="text-center py-8 text-stream-muted text-sm">
-                        <i class="fa-solid fa-compass text-2xl text-stream-border mb-2 block"></i>
-                        Ketik kata kunci untuk mencari secara instan di ribuan video.
-                    </div>
-                `;
-                return;
-            }
-
-            searchTimeout = setTimeout(async () => {
-                box.innerHTML = `<div class="text-center py-8 text-stream-muted text-xs"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Mencari video...</div>`;
-                try {
-                    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-                    const data = await res.json();
-                    if (!data.results || data.results.length === 0) {
-                        box.innerHTML = `
-                            <div class="text-center py-8 text-stream-muted text-sm space-y-1">
-                                <i class="fa-solid fa-film-slash text-2xl text-stream-border mb-2 block"></i>
-                                <p>Tidak ditemukan video dengan kata kunci "<strong>${query}</strong>".</p>
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    box.innerHTML = data.results.map(v => `
-                        <a href="/watch/${v.id}" class="flex items-center gap-3 p-3 rounded-2xl bg-stream-card hover:bg-stream-cardHover border border-stream-borderLight transition group">
-                            <div class="w-16 h-12 rounded-xl overflow-hidden bg-black flex-shrink-0 relative">
-                                <img src="${v.thumbnail_url || '/static/placeholder.svg'}" alt="${v.display_title}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="text-xs font-bold text-white group-hover:text-stream-cyan transition line-clamp-1">
-                                    ${v.display_title}
-                                </div>
-                                <div class="flex items-center gap-2 mt-1 text-[10px] text-stream-muted">
-                                    <span class="text-stream-primary font-bold">${v.quality || '4K'}</span>
-                                    <span>•</span>
-                                    <span>@${v.username || 'user'}</span>
-                                    <span>•</span>
-                                    <span class="uppercase">${v.provider || 'video'}</span>
-                                </div>
-                            </div>
-                            <i class="fa-solid fa-play text-xs text-stream-muted group-hover:text-stream-cyan transition pr-2"></i>
-                        </a>
-                    `).join("");
-                } catch (e) {
-                    box.innerHTML = `<div class="text-center py-6 text-rose-400 text-xs">Gagal melakukan pencarian: ${e.message}</div>`;
-                }
-            }, 250);
-        }
-
-        // Secure URL Opener: Open in New Tab with HTTP/HTTPS Validation & noopener,noreferrer
-        function openSecureNewTab(url, event) {
-            if (event) {
-                event.stopPropagation();
-                event.preventDefault();
-            }
-            if (!url || typeof url !== 'string' || !url.trim()) {
-                showToast("URL sumber tidak tersedia", "error");
-                return;
-            }
-            const cleanUrl = url.trim();
-            try {
-                const parsed = new URL(cleanUrl, window.location.href);
-                if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-                    showToast("Protokol URL tidak aman (hanya HTTP/HTTPS diperbolehkan)", "error");
-                    return;
-                }
-                window.open(parsed.href, '_blank', 'noopener,noreferrer');
-            } catch (e) {
-                showToast("Format URL tidak valid", "error");
-            }
-        }
-
-        // Duration Formatter & Synchronization Engine
-        function formatDuration(val) {
-            if (!val && val !== 0) return null;
-            if (typeof val === 'number') {
-                if (isNaN(val) || val <= 0) return "00:00";
-                const h = Math.floor(val / 3600);
-                const m = Math.floor((val % 3600) / 60);
-                const s = Math.floor(val % 60);
-                if (h > 0) {
-                    return `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
-                }
-                return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
-            }
-            if (typeof val === 'string') {
-                const str = val.trim();
-                if (!str || str === '0' || str === '00:00') return null;
-                if (/^\d+$/.test(str)) {
-                    return formatDuration(parseInt(str, 10));
-                }
-                if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(str)) {
-                    return str;
-                }
-                return str;
-            }
-            return null;
-        }
-
-        function getSynchronizedDuration(video) {
-            if (!video) return "14:20";
-
-            // 1. Check cached duration probed from actual video stream
-            try {
-                const cached = localStorage.getItem("streamvault_dur_" + video.id);
-                if (cached && cached !== "00:00") {
-                    return cached;
-                }
-            } catch(e) {}
-
-            // 2. Check continue watching / history from real playback
-            try {
-                const history = JSON.parse(localStorage.getItem("streamvault_history")) || [];
-                const hist = history.find(h => h.id == video.id);
-                if (hist && hist.duration && hist.duration !== "00:00") {
-                    return hist.duration;
-                }
-            } catch(e) {}
-
-            // 3. Check video properties
-            const parsed = formatDuration(video.duration) || formatDuration(video.duration_seconds);
-            if (parsed && parsed !== "00:00") {
-                return parsed;
-            }
-
-            return "14:20";
-        }
-
-        // Global Video Detail Quick-View Modal
-        let activeModalVideo = null;
-        let probeVideoElement = null;
-
-        function openVideoDetailModal(video) {
-            if (!video) return;
-            activeModalVideo = video;
-            const m = document.getElementById("videoDetailModal");
-            if (!m) return;
-
-            document.getElementById("modalThumbnail").src = video.thumbnail_url || video.thumbnail || '/static/placeholder.svg';
-            document.getElementById("modalTitle").textContent = video.display_title || video.title;
-            document.getElementById("modalQuality").textContent = video.quality || "4K UHD";
-            document.getElementById("modalProvider").textContent = (video.provider || "stream").toUpperCase();
-            
-            // Synchronize modalDuration directly with the video
-            const durationEl = document.getElementById("modalDuration");
-            const durationText = getSynchronizedDuration(video);
-            if (durationEl) {
-                durationEl.textContent = durationText;
-            }
-
-            document.getElementById("modalUploader").textContent = `@${video.username || 'Unknown'}`;
-            document.getElementById("modalPage").textContent = `Forum Page #${video.forum_page || '1'}`;
-            document.getElementById("modalId").textContent = `ID #${video.id}`;
-            document.getElementById("modalPlayBtn").href = `/watch/${video.id}`;
-
-            const videoLink = video.video_url || video.videoUrl || video.direct_url || video.source_url || "";
-            const openSourceBtn = document.getElementById("modalOpenSourceBtn");
-            if (openSourceBtn) {
-                if (videoLink) {
-                    openSourceBtn.disabled = false;
-                    openSourceBtn.classList.remove("opacity-40", "cursor-not-allowed");
-                    openSourceBtn.title = "Buka link video di tab baru: " + videoLink;
-                } else {
-                    openSourceBtn.disabled = true;
-                    openSourceBtn.classList.add("opacity-40", "cursor-not-allowed");
-                    openSourceBtn.title = "Link video tidak tersedia";
-                }
-            }
-
-            const favBtn = document.getElementById("modalFavBtn");
-            if (favBtn) {
-                const fav = isWatchlisted(video.id);
-                favBtn.innerHTML = fav ? `<i class="fa-solid fa-heart text-rose-500"></i>` : `<i class="fa-regular fa-heart text-rose-500"></i>`;
-            }
-
-            // Live probe video stream metadata if available to ensure 100% exact duration sync
-            const streamUrl = video.video_url || video.videoUrl || video.direct_url;
-            if (streamUrl && (streamUrl.includes(".mp4") || streamUrl.includes(".webm") || streamUrl.includes(".m3u8") || streamUrl.includes("dood") || streamUrl.includes("vidara"))) {
-                try {
-                    if (!probeVideoElement) {
-                        probeVideoElement = document.createElement("video");
-                        probeVideoElement.preload = "metadata";
-                    }
-                    probeVideoElement.onloadedmetadata = () => {
-                        if (probeVideoElement.duration && isFinite(probeVideoElement.duration) && probeVideoElement.duration > 0) {
-                            const exactDuration = formatDuration(probeVideoElement.duration);
-                            if (exactDuration && activeModalVideo && activeModalVideo.id === video.id) {
-                                if (durationEl) durationEl.textContent = exactDuration;
-                                activeModalVideo.duration = exactDuration;
-                                try {
-                                    localStorage.setItem("streamvault_dur_" + video.id, exactDuration);
-                                    document.querySelectorAll(`[data-video-id="${video.id}"]`).forEach(el => {
-                                        el.textContent = exactDuration;
-                                    });
-                                } catch(e) {}
-                            }
-                        }
-                    };
-                    probeVideoElement.src = streamUrl;
-                } catch(e) {}
-            }
-
-            m.classList.remove("hidden");
-        }
-
-        function openModalSource(event) {
-            if (!activeModalVideo) return;
-            const url = activeModalVideo.video_url || activeModalVideo.videoUrl || activeModalVideo.direct_url || activeModalVideo.source_url;
-            openSecureNewTab(url, event);
-        }
-
-        function closeVideoDetailModal() {
-            const m = document.getElementById("videoDetailModal");
-            if (m) m.classList.add("hidden");
-        }
-
-        function toggleModalWatchlist() {
-            if (!activeModalVideo) return;
-            const fav = toggleWatchlistItem(activeModalVideo);
-            const favBtn = document.getElementById("modalFavBtn");
-            if (favBtn) {
-                favBtn.innerHTML = fav ? `<i class="fa-solid fa-heart text-rose-500"></i>` : `<i class="fa-regular fa-heart text-rose-500"></i>`;
-            }
-        }
-
-        function copyModalLink() {
-            if (!activeModalVideo) return;
-            const url = activeModalVideo.video_url || `${window.location.origin}/watch/${activeModalVideo.id}`;
-            navigator.clipboard.writeText(url).then(() => {
-                showToast("Link video berhasil disalin ke clipboard!", "success");
-            });
-        }
-
-        function toggleMobileMenu() {
-            const d = document.getElementById("mobileDrawer");
-            if (d) d.classList.toggle("hidden");
-        }
-
-        // Keyboard Shortcut Listener (Ctrl+K for search, Escape for modal close)
-        document.addEventListener("keydown", (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-                e.preventDefault();
-                openSearchModal();
-            } else if (e.key === "Escape") {
-                closeSearchModal();
-                closeVideoDetailModal();
-                const wm = document.getElementById("watchlistModal");
-                if (wm && !wm.classList.contains("hidden")) wm.classList.add("hidden");
-            }
-        });
-
-        // Initialize badges on DOM ready
-        document.addEventListener("DOMContentLoaded", () => {
-            updateWatchlistBadges();
-        });
-    </script>
-
+    <!-- Global Client-side Utilities Script (Separated JS) -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

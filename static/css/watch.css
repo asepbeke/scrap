@@ -1,0 +1,49 @@
+/**
+ * StreamVault - Watch Page Stylesheet
+ * Theater mode, Cinema ambient backlight, scrub track and player controls
+ */
+
+/* Fullscreen & Theater mode adjustments */
+body.theater-mode {
+    background-color: #000000 !important;
+}
+
+body.theater-mode header,
+body.theater-mode footer,
+body.theater-mode #sidebarRelated {
+    opacity: 0.15;
+    transition: opacity 0.3s ease;
+}
+
+body.theater-mode header:hover,
+body.theater-mode footer:hover,
+body.theater-mode #sidebarRelated:hover {
+    opacity: 1;
+}
+
+body.theater-mode #playerWrapper {
+    max-width: 100% !important;
+    grid-column: span 3 / span 3 !important;
+}
+
+/* Ambient Cinema Ambilight Glow (Subtle Purple/Blue Radial) */
+.ambient-glow {
+    position: absolute;
+    inset: -20px;
+    background: radial-gradient(circle at center, rgba(139, 92, 246, 0.22) 0%, rgba(59, 130, 246, 0.14) 40%, transparent 70%);
+    filter: blur(45px);
+    opacity: 0.65;
+    z-index: 0;
+    pointer-events-none;
+    transition: opacity 0.5s ease;
+}
+
+/* Custom Video Player Scrub Bar Track */
+.scrub-track {
+    height: 6px;
+    transition: height 0.15s ease;
+}
+
+.scrub-track:hover {
+    height: 10px;
+}

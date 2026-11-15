@@ -2,6 +2,10 @@
 
 {% block title %}{{ current_thread_cfg.name }} - StreamVault Premium Streaming{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="space-y-10 pb-16">
 
@@ -15,7 +19,7 @@
         <!-- Background Hero Backdrop with object-fit: cover & Cinematic Multi-Layer Lighting -->
         <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
             <img id="heroBackdropImg" 
-                 src="{{ hero.thumbnail_url or '/static/placeholder.svg' }}" 
+                 src="{{ hero.thumbnail_url or url_for('static', filename='placeholder.svg') }}" 
                  alt="{{ hero.display_title }}" 
                  onerror="this.src='/static/placeholder.svg'; this.classList.add('opacity-40');"
                  class="w-full h-full object-cover object-center filter brightness-[0.80] contrast-[1.12] saturate-[1.08] transition-all duration-700 scale-100 will-change-transform">
@@ -67,7 +71,7 @@
                         </span>
                     </div>
 
-                    <!-- Large Cinematic Video Title (56-72px on large desktop) -->
+                    <!-- Large Cinematic Video Title -->
                     <h1 id="heroTitle" class="font-heading font-black text-3xl sm:text-5xl lg:text-6xl xl:text-[68px] text-[#F8FAFC] tracking-tight leading-[1.08] drop-shadow-2xl line-clamp-2">
                         {{ hero.display_title }}
                     </h1>
@@ -81,7 +85,7 @@
                     <div class="flex items-center gap-3 sm:gap-4 pt-1 flex-wrap">
                         <!-- Primary Watch Now Button -->
                         <a id="heroPlayBtn" href="{{ url_for('watch', video_id=hero.id) }}" 
-                           class="h-13 sm:h-14 px-7 sm:px-8 rounded-full btn-action-play font-bold text-sm sm:text-base flex items-center gap-3 shadow-glow-primary group">
+                           class="h-12 sm:h-14 px-7 sm:px-8 rounded-full btn-action-play font-bold text-sm sm:text-base flex items-center gap-3 shadow-glow-primary group">
                             <div class="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <i class="fa-solid fa-play text-white text-xs pl-0.5"></i>
                             </div>
@@ -89,31 +93,33 @@
                         </a>
 
                         <!-- Secondary Open Source Glass Button -->
-                        <button id="heroOpenSourceBtn" 
+                        <button type="button" id="heroOpenSourceBtn" 
                                 onclick="openSecureNewTab('{{ hero.video_url or hero.videoUrl or hero.direct_url }}', event)" 
-                                class="h-13 sm:h-14 px-6 rounded-full btn-action-glass font-semibold text-sm sm:text-base flex items-center gap-2.5 group text-slate-200 hover:text-white" 
+                                class="h-12 sm:h-14 px-6 rounded-full btn-action-glass font-semibold text-sm sm:text-base flex items-center gap-2.5 group text-slate-200 hover:text-white" 
                                 title="Open original source in new tab">
                             <i class="fa-solid fa-arrow-up-right-from-square text-slate-300 group-hover:text-white text-sm group-hover:scale-105 transition-transform"></i>
                             <span>Open Source</span>
                         </button>
 
                         <!-- Detail Video Button -->
-                        <button id="heroDetailBtn" onclick='openHeroDetailModal()' 
-                                class="h-13 sm:h-14 px-5 rounded-full btn-action-glass font-semibold text-sm sm:text-base flex items-center gap-2 group text-slate-300 hover:text-white"
+                        <button type="button" id="heroDetailBtn" onclick="openHeroDetailModal()" 
+                                class="h-12 sm:h-14 px-5 rounded-full btn-action-glass font-semibold text-sm sm:text-base flex items-center gap-2 group text-slate-300 hover:text-white"
                                 title="Lihat Informasi Lengkap Video">
                             <i class="fa-solid fa-circle-info text-slate-300 group-hover:text-white text-sm"></i>
                             <span class="hidden sm:inline">Detail Video</span>
                         </button>
 
-                        <!-- Add to Favorites Tertiary Button (Min 44x44px touch target) -->
-                        <button id="heroFavBtn" onclick='toggleHeroWatchlist(currentHeroVideo || {{ hero|tojson|safe }})' 
-                                class="w-13 h-13 min-w-[50px] min-h-[50px] rounded-full btn-action-tertiary text-slate-300 hover:text-rose-400 group border border-white/[0.08] hover:border-white/[0.18]" title="Simpan ke Watchlist">
+                        <!-- Add to Favorites Tertiary Button -->
+                        <button type="button" id="heroFavBtn" onclick="toggleHeroWatchlist()" 
+                                class="w-12 h-12 sm:w-14 sm:h-14 rounded-full btn-action-tertiary text-slate-300 hover:text-rose-400 group border border-white/[0.08] hover:border-white/[0.18] flex items-center justify-center" 
+                                title="Simpan ke Watchlist" aria-label="Simpan ke Watchlist">
                             <i class="fa-regular fa-heart text-lg text-rose-500 group-hover:scale-110 transition-transform"></i>
                         </button>
 
-                        <!-- Share Link Tertiary Button (Min 44x44px touch target) -->
-                        <button id="heroShareBtn" onclick="shareCurrentHeroVideo()" 
-                                class="w-13 h-13 min-w-[50px] min-h-[50px] rounded-full btn-action-tertiary text-slate-300 hover:text-white group border border-white/[0.08] hover:border-white/[0.18]" title="Salin Link Video">
+                        <!-- Share Link Tertiary Button -->
+                        <button type="button" id="heroShareBtn" onclick="shareCurrentHeroVideo()" 
+                                class="w-12 h-12 sm:w-14 sm:h-14 rounded-full btn-action-tertiary text-slate-300 hover:text-white group border border-white/[0.08] hover:border-white/[0.18] flex items-center justify-center" 
+                                title="Salin Link Video" aria-label="Salin Link Video">
                             <i class="fa-regular fa-share-from-square text-base group-hover:scale-110 transition-transform"></i>
                         </button>
                     </div>
@@ -123,10 +129,11 @@
                     <div class="flex items-center gap-2 pt-2 sm:pt-4">
                         <span class="text-[11px] font-bold text-stream-muted uppercase tracking-wider mr-2">Sorotan:</span>
                         {% for f_vid in featured_videos[:5] %}
-                        <button onclick='switchHeroSlide({{ f_vid|tojson|safe }}, {{ loop.index0 }})' 
+                        <button type="button" onclick="switchHeroSlideByIndex({{ loop.index0 }})" 
                                 class="hero-indicator h-1.5 rounded-full transition-all duration-300 {% if loop.first %}w-8 bg-stream-primary{% else %}w-3 bg-white/20 hover:bg-white/40{% endif %}"
                                 data-index="{{ loop.index0 }}"
-                                title="{{ f_vid.display_title }}"></button>
+                                title="{{ f_vid.display_title }}"
+                                aria-label="Slide {{ loop.index }}"></button>
                         {% endfor %}
                     </div>
                     {% endif %}
@@ -134,7 +141,7 @@
 
                 <!-- Right Column: Featured Poster / Video Preview Card (35-45% width: 5 cols on lg, 4 cols on xl) -->
                 <div class="hidden lg:flex lg:col-span-5 xl:col-span-4 justify-center items-center">
-                    <div class="relative w-full max-w-md group cursor-pointer" onclick='openHeroDetailModal()'>
+                    <div class="relative w-full max-w-md group cursor-pointer" onclick="openHeroDetailModal()">
                         <!-- Ambient back glow behind poster -->
                         <div class="absolute -inset-2 bg-gradient-to-r from-stream-primary/30 to-stream-accent/30 rounded-3xl blur-2xl opacity-60 group-hover:opacity-90 transition-opacity duration-500"></div>
                         
@@ -143,7 +150,7 @@
                             <!-- Thumbnail Aspect (16:9 cinematic) -->
                             <div class="relative aspect-video overflow-hidden bg-[#0D111B]">
                                 <img id="heroPosterImg" 
-                                     src="{{ hero.thumbnail_url or '/static/placeholder.svg' }}" 
+                                     src="{{ hero.thumbnail_url or url_for('static', filename='placeholder.svg') }}" 
                                      alt="{{ hero.display_title }}" 
                                      onerror="this.src='/static/placeholder.svg';"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out">
@@ -215,10 +222,10 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="scrollRow('continueRow', -1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition">
+                    <button type="button" onclick="scrollRow('continueRow', -1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition" aria-label="Geser Kiri">
                         <i class="fa-solid fa-chevron-left text-xs"></i>
                     </button>
-                    <button onclick="scrollRow('continueRow', 1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition">
+                    <button type="button" onclick="scrollRow('continueRow', 1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition" aria-label="Geser Kanan">
                         <i class="fa-solid fa-chevron-right text-xs"></i>
                     </button>
                 </div>
@@ -250,10 +257,10 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="scrollRow('trendingRow', -1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition">
+                    <button type="button" onclick="scrollRow('trendingRow', -1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition" aria-label="Geser Kiri">
                         <i class="fa-solid fa-chevron-left text-xs"></i>
                     </button>
-                    <button onclick="scrollRow('trendingRow', 1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition">
+                    <button type="button" onclick="scrollRow('trendingRow', 1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition" aria-label="Geser Kanan">
                         <i class="fa-solid fa-chevron-right text-xs"></i>
                     </button>
                 </div>
@@ -262,32 +269,32 @@
             <!-- Horizontal Trending Row with Huge Rank Numbers -->
             <div id="trendingRow" class="flex gap-6 overflow-x-auto no-scrollbar py-4 scroll-smooth">
                 {% for t_vid in trending_videos %}
-                <div class="flex-shrink-0 flex items-end group cursor-pointer" onclick='openVideoDetailModal({{ t_vid|tojson|safe }})'>
+                <div class="flex-shrink-0 flex items-end group cursor-pointer" onclick="openVideoDetailModalById('{{ t_vid.id }}')">
                     <!-- Huge Netflix Rank Number -->
                     <span class="rank-number -mr-8 -mb-3 z-0 group-hover:scale-105 transition-transform duration-300">
                         {{ loop.index }}
                     </span>
                     <!-- Video Card -->
                     <div class="relative w-44 sm:w-52 h-64 sm:h-72 rounded-2xl overflow-hidden glass-card group-hover:border-stream-primary/50 group-hover:shadow-card-hover group-hover:-translate-y-1.5 transition-all duration-300 z-10 bg-stream-card flex flex-col justify-end">
-                        <img src="{{ t_vid.thumbnail_url or '/static/placeholder.svg' }}" 
+                        <img src="{{ t_vid.thumbnail_url or url_for('static', filename='placeholder.svg') }}" 
                              alt="{{ t_vid.display_title }}" 
-                             loading="lazy"
+                             loading="lazy" 
                              class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                         <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
                         
-                        <!-- Top Badges & Quick External Link (Accessible on Mobile) -->
+                        <!-- Top Badges & Quick External Link -->
                         <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-20">
                             <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1B2232]/90 border border-white/[0.08] text-[#94A3B8] font-mono backdrop-blur-sm">
                                 {{ t_vid.quality or '4K' }}
                             </span>
                             <div class="flex items-center gap-1.5">
-                                <button onclick="openSecureNewTab('{{ t_vid.video_url or t_vid.videoUrl or t_vid.direct_url }}', event);" 
+                                <button type="button" onclick="openSecureNewTab('{{ t_vid.video_url or t_vid.videoUrl or t_vid.direct_url }}', event);" 
                                         class="btn-action-icon btn-action-glass w-9 h-9 min-w-[38px] min-h-[38px] text-slate-300 hover:text-white shadow-sm" 
-                                        title="Open original source in new tab">
+                                        title="Open original source in new tab" aria-label="Open original source in new tab">
                                     <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
                                 </button>
-                                <button onclick="event.stopPropagation(); toggleCardWatchlist({{ t_vid|tojson|safe }}, this);" 
-                                        class="btn-action-icon btn-action-glass w-9 h-9 min-w-[38px] min-h-[38px] text-slate-300 hover:text-rose-400 shadow-sm" title="Add to Favorites">
+                                <button type="button" onclick="event.stopPropagation(); toggleCardWatchlistById('{{ t_vid.id }}', this);" 
+                                        class="btn-action-icon btn-action-glass w-9 h-9 min-w-[38px] min-h-[38px] text-slate-300 hover:text-rose-400 shadow-sm" title="Add to Favorites" aria-label="Add to Favorites">
                                     <i class="fa-regular fa-heart text-xs text-rose-400"></i>
                                 </button>
                             </div>
@@ -312,7 +319,7 @@
                                 <i class="fa-solid fa-play text-[10px] pl-0.5"></i>
                                 <span>Play</span>
                             </a>
-                            <button onclick="openSecureNewTab('{{ t_vid.video_url or t_vid.videoUrl or t_vid.direct_url }}', event);" 
+                            <button type="button" onclick="openSecureNewTab('{{ t_vid.video_url or t_vid.videoUrl or t_vid.direct_url }}', event);" 
                                     class="h-9 px-3 rounded-full btn-action-glass text-xs font-semibold flex items-center gap-1.5 hover:scale-105 pointer-events-auto group/src" 
                                     title="Open original source in new tab">
                                 <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-300 group-hover/src:text-white transition-colors"></i>
@@ -346,10 +353,10 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="scrollRow('recentRow', -1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition">
+                    <button type="button" onclick="scrollRow('recentRow', -1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition" aria-label="Geser Kiri">
                         <i class="fa-solid fa-chevron-left text-xs"></i>
                     </button>
-                    <button onclick="scrollRow('recentRow', 1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition">
+                    <button type="button" onclick="scrollRow('recentRow', 1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition" aria-label="Geser Kanan">
                         <i class="fa-solid fa-chevron-right text-xs"></i>
                     </button>
                 </div>
@@ -359,10 +366,10 @@
             <div id="recentRow" class="flex gap-4 overflow-x-auto no-scrollbar py-2 scroll-smooth">
                 {% for n_vid in recent_videos %}
                 <div class="flex-shrink-0 w-60 sm:w-72 rounded-2xl overflow-hidden glass-card group hover:border-stream-primary/50 hover:shadow-card-hover transition-all duration-300 cursor-pointer"
-                     onclick='openVideoDetailModal({{ n_vid|tojson|safe }})'>
+                     onclick="openVideoDetailModalById('{{ n_vid.id }}')">
                     <!-- Thumbnail 16:9 -->
                     <div class="relative thumb-box-wide">
-                        <img src="{{ n_vid.thumbnail_url or '/static/placeholder.svg' }}" alt="{{ n_vid.display_title }}" loading="lazy" class="group-hover:scale-105 transition-transform duration-500">
+                        <img src="{{ n_vid.thumbnail_url or url_for('static', filename='placeholder.svg') }}" alt="{{ n_vid.display_title }}" loading="lazy" class="group-hover:scale-105 transition-transform duration-500">
                         <div class="absolute inset-0 bg-gradient-to-t from-stream-card via-transparent to-transparent"></div>
                         
                         <!-- Top Badges & Mobile Accessible Actions -->
@@ -376,13 +383,13 @@
                                 </span>
                             </div>
                             <div class="flex items-center gap-1.5">
-                                <button onclick="openSecureNewTab('{{ n_vid.video_url or n_vid.videoUrl or n_vid.direct_url }}', event);" 
+                                <button type="button" onclick="openSecureNewTab('{{ n_vid.video_url or n_vid.videoUrl or n_vid.direct_url }}', event);" 
                                         class="btn-action-icon btn-action-glass w-9 h-9 min-w-[36px] min-h-[36px] text-slate-300 hover:text-white shadow-sm" 
-                                        title="Open original source in new tab">
+                                        title="Open original source in new tab" aria-label="Open original source in new tab">
                                     <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                                 </button>
-                                <button onclick="event.stopPropagation(); toggleCardWatchlist({{ n_vid|tojson|safe }}, this);" 
-                                        class="btn-action-icon btn-action-glass w-9 h-9 min-w-[36px] min-h-[36px] text-slate-300 hover:text-rose-400 shadow-sm" title="Add to Favorites">
+                                <button type="button" onclick="event.stopPropagation(); toggleCardWatchlistById('{{ n_vid.id }}', this);" 
+                                        class="btn-action-icon btn-action-glass w-9 h-9 min-w-[36px] min-h-[36px] text-slate-300 hover:text-rose-400 shadow-sm" title="Add to Favorites" aria-label="Add to Favorites">
                                     <i class="fa-regular fa-heart text-[11px] text-rose-400"></i>
                                 </button>
                             </div>
@@ -400,7 +407,7 @@
                                 <i class="fa-solid fa-play text-[10px] pl-0.5"></i>
                                 <span>Play</span>
                             </a>
-                            <button onclick="openSecureNewTab('{{ n_vid.video_url or n_vid.videoUrl or n_vid.direct_url }}', event);" 
+                            <button type="button" onclick="openSecureNewTab('{{ n_vid.video_url or n_vid.videoUrl or n_vid.direct_url }}', event);" 
                                     class="h-9 px-3.5 rounded-full btn-action-glass text-xs font-semibold flex items-center gap-1.5 hover:scale-105 pointer-events-auto group/src" 
                                     title="Open original source in new tab">
                                 <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-300 group-hover/src:text-white transition-colors"></i>
@@ -490,10 +497,10 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="scrollRow('recRow', -1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition">
+                    <button type="button" onclick="scrollRow('recRow', -1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition" aria-label="Geser Kiri">
                         <i class="fa-solid fa-chevron-left text-xs"></i>
                     </button>
-                    <button onclick="scrollRow('recRow', 1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition">
+                    <button type="button" onclick="scrollRow('recRow', 1)" class="w-8 h-8 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight flex items-center justify-center transition" aria-label="Geser Kanan">
                         <i class="fa-solid fa-chevron-right text-xs"></i>
                     </button>
                 </div>
@@ -502,10 +509,10 @@
             <div id="recRow" class="flex gap-4 overflow-x-auto no-scrollbar py-2 scroll-smooth">
                 {% for r_vid in recommended_videos %}
                 <div class="flex-shrink-0 w-60 sm:w-72 rounded-2xl overflow-hidden glass-card group hover:border-stream-primary/50 hover:shadow-card-hover transition-all duration-300 cursor-pointer"
-                     onclick='openVideoDetailModal({{ r_vid|tojson|safe }})'>
+                     onclick="openVideoDetailModalById('{{ r_vid.id }}')">
                     <!-- Thumbnail 16:9 -->
                     <div class="relative thumb-box-wide">
-                        <img src="{{ r_vid.thumbnail_url or '/static/placeholder.svg' }}" alt="{{ r_vid.display_title }}" loading="lazy" class="group-hover:scale-105 transition-transform duration-500">
+                        <img src="{{ r_vid.thumbnail_url or url_for('static', filename='placeholder.svg') }}" alt="{{ r_vid.display_title }}" loading="lazy" class="group-hover:scale-105 transition-transform duration-500">
                         <div class="absolute inset-0 bg-gradient-to-t from-stream-card via-transparent to-transparent"></div>
                         
                         <!-- Top Badges & Mobile Accessible Actions -->
@@ -514,13 +521,13 @@
                                 {{ r_vid.quality or '1080p' }}
                             </span>
                             <div class="flex items-center gap-1.5">
-                                <button onclick="openSecureNewTab('{{ r_vid.video_url or r_vid.videoUrl or r_vid.direct_url }}', event);" 
+                                <button type="button" onclick="openSecureNewTab('{{ r_vid.video_url or r_vid.videoUrl or r_vid.direct_url }}', event);" 
                                         class="btn-action-icon btn-action-glass w-9 h-9 min-w-[36px] min-h-[36px] text-slate-300 hover:text-white shadow-sm" 
-                                        title="Open original source in new tab">
+                                        title="Open original source in new tab" aria-label="Open original source in new tab">
                                     <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                                 </button>
-                                <button onclick="event.stopPropagation(); toggleCardWatchlist({{ r_vid|tojson|safe }}, this);" 
-                                        class="btn-action-icon btn-action-glass w-9 h-9 min-w-[36px] min-h-[36px] text-slate-300 hover:text-rose-400 shadow-sm" title="Add to Favorites">
+                                <button type="button" onclick="event.stopPropagation(); toggleCardWatchlistById('{{ r_vid.id }}', this);" 
+                                        class="btn-action-icon btn-action-glass w-9 h-9 min-w-[36px] min-h-[36px] text-slate-300 hover:text-rose-400 shadow-sm" title="Add to Favorites" aria-label="Add to Favorites">
                                     <i class="fa-regular fa-heart text-[11px] text-rose-400"></i>
                                 </button>
                             </div>
@@ -538,7 +545,7 @@
                                 <i class="fa-solid fa-play text-[10px] pl-0.5"></i>
                                 <span>Play</span>
                             </a>
-                            <button onclick="openSecureNewTab('{{ r_vid.video_url or r_vid.videoUrl or r_vid.direct_url }}', event);" 
+                            <button type="button" onclick="openSecureNewTab('{{ r_vid.video_url or r_vid.videoUrl or r_vid.direct_url }}', event);" 
                                     class="h-9 px-3.5 rounded-full btn-action-glass text-xs font-semibold flex items-center gap-1.5 hover:scale-105 pointer-events-auto group/src" 
                                     title="Open original source in new tab">
                                 <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-300 group-hover/src:text-white transition-colors"></i>
@@ -577,7 +584,7 @@
                        {% if active_thread == key %}bg-gradient-to-r from-stream-primary to-stream-accent text-white shadow-glow-primary ring-1 ring-purple-400/40{% else %}bg-stream-card text-stream-muted hover:text-white hover:bg-stream-cardHover{% endif %}">
                         <i class="fa-solid {{ th.icon }}"></i>
                         <span>{{ th.name }}</span>
-                        <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-black/40 font-mono">Page {{ th.default_page }}+</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-black/40 font-mono">Page {{ th.default_page }}+</span>
                     </a>
                     {% endfor %}
                 </div>
@@ -625,7 +632,8 @@
                         {% if selected_provider %}<input type="hidden" name="provider" value="{{ selected_provider }}">{% endif %}
                         <span class="text-stream-muted pl-2 font-medium hidden sm:inline"><i class="fa-solid fa-hashtag text-stream-accent mr-1"></i>Page:</span>
                         <input type="number" name="page" min="1" max="{{ latest_page }}" value="{{ current_forum_page }}" 
-                               class="w-16 sm:w-20 bg-stream-bg border border-stream-borderLight text-center text-white font-bold text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-stream-primary">
+                               class="w-16 sm:w-20 bg-stream-bg border border-stream-borderLight text-center text-white font-bold text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-stream-primary"
+                               aria-label="Nomor Halaman">
                         <button type="submit" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-stream-primary to-stream-accent hover:opacity-95 text-white text-xs font-bold transition shadow-sm">
                             Go
                         </button>
@@ -658,7 +666,7 @@
                            class="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shadow-sm flex items-center space-x-1.5
                            {% if selected_provider == prov %}bg-gradient-to-r from-stream-primary to-stream-accent text-white shadow-glow-primary{% else %}bg-stream-card text-stream-muted hover:text-white hover:bg-stream-cardHover{% endif %}">
                             <span>{{ prov }}</span>
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 text-slate-300 font-mono">{{ count }}</span>
+                            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-black/40 text-slate-300 font-mono">{{ count }}</span>
                         </a>
                         {% endfor %}
                     </div>
@@ -692,9 +700,9 @@
                             {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
                             {% if uploader %}<input type="hidden" name="uploader" value="{{ uploader }}">{% endif %}
 
-                            <label class="text-stream-muted font-medium hidden sm:inline">Urutan:</label>
-                            <select name="sort" onchange="this.form.submit()" 
-                                     class="bg-stream-card border border-stream-borderLight text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-stream-primary">
+                            <label for="sortSelector" class="text-stream-muted font-medium hidden sm:inline">Urutan:</label>
+                            <select id="sortSelector" name="sort" onchange="this.form.submit()" 
+                                    class="bg-stream-card border border-stream-borderLight text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-stream-primary">
                                 <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Terbaru</option>
                                 <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Paling Populer</option>
                                 <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Terlama</option>
@@ -726,11 +734,11 @@
             <div id="videoGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
                 {% for video in videos %}
                 <div class="video-card glass-card rounded-2xl overflow-hidden hover:border-stream-primary/50 hover:shadow-card-hover group hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
-                     onclick='openVideoDetailModal({{ video|tojson|safe }})'>
+                     onclick="openVideoDetailModalById('{{ video.id }}')">
                     
                     <!-- Card Thumbnail Container -->
                     <div class="relative thumb-box-container thumb-box-wide">
-                        <img src="{{ video.thumbnail_url or '/static/placeholder.svg' }}" 
+                        <img src="{{ video.thumbnail_url or url_for('static', filename='placeholder.svg') }}" 
                              alt="{{ video.display_title }}" 
                              loading="lazy" 
                              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
@@ -743,13 +751,13 @@
                                 {{ video.quality or '4K' }}
                             </span>
                             <div class="flex items-center gap-1.5">
-                                <button onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event);" 
+                                <button type="button" onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event);" 
                                         class="btn-action-icon btn-action-glass w-9 h-9 min-w-[36px] min-h-[36px] text-slate-300 hover:text-white shadow-sm" 
-                                        title="Open original source in new tab">
+                                        title="Open original source in new tab" aria-label="Open original source in new tab">
                                     <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                                 </button>
-                                <button onclick="event.stopPropagation(); toggleCardWatchlist({{ video|tojson|safe }}, this);" 
-                                        class="btn-action-icon btn-action-glass w-9 h-9 min-w-[36px] min-h-[36px] text-slate-300 hover:text-rose-400 shadow-sm" title="Add to Favorites">
+                                <button type="button" onclick="event.stopPropagation(); toggleCardWatchlistById('{{ video.id }}', this);" 
+                                        class="btn-action-icon btn-action-glass w-9 h-9 min-w-[36px] min-h-[36px] text-slate-300 hover:text-rose-400 shadow-sm" title="Add to Favorites" aria-label="Add to Favorites">
                                     <i class="fa-regular fa-heart text-[11px] text-rose-400"></i>
                                 </button>
                             </div>
@@ -768,7 +776,7 @@
                                 <i class="fa-solid fa-play text-[10px] pl-0.5"></i>
                                 <span>Play</span>
                             </a>
-                            <button onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event);" 
+                            <button type="button" onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event);" 
                                     class="h-9 px-3.5 rounded-full btn-action-glass text-xs font-semibold flex items-center gap-1.5 hover:scale-105 pointer-events-auto group/src" 
                                     title="Open original source in new tab">
                                 <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-300 group-hover/src:text-white transition-colors"></i>
@@ -858,240 +866,22 @@
 
 {% block extra_scripts %}
 <script>
-    // Horizontal row scrolling helper
-    function scrollRow(rowId, direction) {
-        const row = document.getElementById(rowId);
-        if (!row) return;
-        const scrollAmount = row.clientWidth * 0.75;
-        row.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
-    }
-
-    // Hero Section Slide Switcher & Detail Modal Synchronization
-    const initialHeroVideo = {{ hero|tojson|safe if hero else 'null' }};
-    let currentHeroVideo = initialHeroVideo;
-
-    function openHeroDetailModal() {
-        const vid = currentHeroVideo || initialHeroVideo;
-        if (vid) {
-            openVideoDetailModal(vid);
-        }
-    }
-
-    function shareCurrentHeroVideo() {
-        const vid = currentHeroVideo || initialHeroVideo;
-        if (!vid) return;
-        const sUrl = vid.video_url || vid.videoUrl || vid.direct_url || (window.location.origin + "/watch/" + vid.id);
-        copyWatchLink(sUrl);
-    }
-    function switchHeroSlide(video, index) {
-        currentHeroVideo = video;
-        const bImg = document.getElementById("heroBackdropImg");
-        if (bImg) bImg.src = video.thumbnail_url || '/static/placeholder.svg';
-        document.getElementById("heroTitle").textContent = video.display_title;
-        document.getElementById("heroQuality").textContent = video.quality || "4K UHD";
-        document.getElementById("heroProvider").textContent = (video.provider || "video").toUpperCase();
-        // Synchronized duration for hero
-        const dur = typeof getSynchronizedDuration === 'function' ? getSynchronizedDuration(video) : (video.duration || '18:45');
-        document.getElementById("heroDuration").innerHTML = `<i class="fa-regular fa-clock mr-1 text-[#8B5CF6]"></i> ${dur}`;
-        const pageBadge = document.getElementById("heroPageBadge");
-        if (pageBadge && video.forum_page) {
-            pageBadge.innerHTML = `<i class="fa-solid fa-file-lines text-stream-primary mr-1"></i>Page ${video.forum_page}`;
-        }
-        document.getElementById("heroDesc").innerHTML = `Video rilis terbaru dari <strong>Page ${video.forum_page || 'Terbaru'}</strong> diunggah oleh <strong>@${video.username || 'Unknown'}</strong> di saluran ${video.thread_name || 'StreamVault'}. Nikmati playback beresolusi tinggi dengan audio jernih dan kontrol pemutar bioskop modern.`;
-        document.getElementById("heroPlayBtn").href = `/watch/${video.id}`;
-        
-        // Update hero right preview poster card
-        const posterImg = document.getElementById("heroPosterImg");
-        if (posterImg) posterImg.src = video.thumbnail_url || '/static/placeholder.svg';
-        const posterTitle = document.getElementById("heroPosterTitle");
-        if (posterTitle) posterTitle.textContent = video.display_title;
-        const posterDur = document.getElementById("heroPosterDuration");
-        if (posterDur) posterDur.textContent = dur;
-        const posterPage = document.getElementById("heroPosterPage");
-        if (posterPage && video.forum_page) {
-            posterPage.textContent = `Page ${video.forum_page} • Rilis Terbaru`;
-        }
-
-        // Update hero Open in New Tab button
-        const openBtn = document.getElementById("heroOpenSourceBtn");
-        if (openBtn) {
-            const sUrl = video.video_url || video.videoUrl || video.direct_url || video.source_url || "";
-            openBtn.setAttribute("onclick", `openSecureNewTab('${sUrl}', event)`);
-        }
-
-        // Update hero Detail Video button so modal opens with this exact video and its synchronized duration
-        const detailBtn = document.getElementById("heroDetailBtn");
-        if (detailBtn) {
-            detailBtn.onclick = () => openVideoDetailModal(video);
-        }
-
-        // Update carousel indicators
-        document.querySelectorAll(".hero-indicator").forEach((dot, idx) => {
-            if (idx === index) {
-                dot.className = "hero-indicator h-1.5 rounded-full transition-all duration-300 w-8 bg-stream-primary";
-            } else {
-                dot.className = "hero-indicator h-1.5 rounded-full transition-all duration-300 w-3 bg-white/20 hover:bg-white/40";
-            }
-        });
-
-        // Update hero favorite button
-        const favBtn = document.getElementById("heroFavBtn");
-        if (favBtn) {
-            const fav = isWatchlisted(video.id);
-            favBtn.innerHTML = fav ? `<i class="fa-solid fa-heart text-rose-500"></i>` : `<i class="fa-regular fa-heart"></i>`;
-        }
-    }
-
-    function toggleHeroWatchlist(video) {
-        const activeVid = currentHeroVideo || video;
-        const fav = toggleWatchlistItem(activeVid);
-        const favBtn = document.getElementById("heroFavBtn");
-        if (favBtn) {
-            favBtn.innerHTML = fav ? `<i class="fa-solid fa-heart text-rose-500"></i>` : `<i class="fa-regular fa-heart"></i>`;
-        }
-    }
-
-    function toggleCardWatchlist(video, btn) {
-        const fav = toggleWatchlistItem(video);
-        if (btn) {
-            btn.innerHTML = fav ? `<i class="fa-solid fa-heart text-[11px] text-rose-500"></i>` : `<i class="fa-regular fa-heart text-[11px] text-rose-400"></i>`;
-        }
-    }
-
-    // Layout Switcher (Wide 16:9, Tall Poster, Fit)
-    function setLayout(mode) {
-        localStorage.setItem("streamvault_layout", mode);
-        const boxes = document.querySelectorAll(".thumb-box-container");
-        const btnWide = document.getElementById("btnLayoutWide");
-        const btnTall = document.getElementById("btnLayoutTall");
-        const btnFit = document.getElementById("btnLayoutFit");
-
-        boxes.forEach(b => {
-            b.classList.remove("thumb-box-wide", "thumb-box-tall", "thumb-box-fit");
-            if (mode === "tall") {
-                b.classList.add("thumb-box-tall");
-            } else if (mode === "fit") {
-                b.classList.add("thumb-box-fit");
-            } else {
-                b.classList.add("thumb-box-wide");
-            }
-        });
-
-        // Toggle active button styles
-        [btnWide, btnTall, btnFit].forEach(btn => {
-            if (btn) {
-                btn.classList.remove("bg-stream-primary", "text-white");
-                btn.classList.add("text-stream-muted");
-            }
-        });
-
-        if (mode === "tall" && btnTall) {
-            btnTall.classList.add("bg-stream-primary", "text-white");
-            btnTall.classList.remove("text-stream-muted");
-        } else if (mode === "fit" && btnFit) {
-            btnFit.classList.add("bg-stream-primary", "text-white");
-            btnFit.classList.remove("text-stream-muted");
-        } else if (btnWide) {
-            btnWide.classList.add("bg-stream-primary", "text-white");
-            btnWide.classList.remove("text-stream-muted");
-        }
-    }
-
-    // Hydrate Continue Watching row from localStorage
-    function loadContinueWatching() {
-        const sec = document.getElementById("continueWatchingSection");
-        const row = document.getElementById("continueRow");
-        if (!sec || !row) return;
-
-        let history = [];
-        try {
-            history = JSON.parse(localStorage.getItem("streamvault_history")) || [];
-        } catch (e) {
-            history = [];
-        }
-
-        if (history.length === 0) {
-            sec.classList.add("hidden");
-            return;
-        }
-
-        sec.classList.remove("hidden");
-        row.innerHTML = history.map(item => `
-            <div class="flex-shrink-0 w-64 sm:w-72 rounded-2xl overflow-hidden glass-card group hover:border-stream-primary/50 hover:shadow-card-hover transition-all duration-300">
-                <div class="relative thumb-box-wide">
-                    <img src="${item.thumbnail_url || '/static/placeholder.svg'}" alt="${item.display_title}" class="w-full h-full object-cover">
-                    <!-- Progress Bar Overlay -->
-                    <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-black/80">
-                        <div class="h-full bg-gradient-to-r from-stream-primary to-stream-accent" style="width: ${item.progressPercent || 35}%;"></div>
-                    </div>
-                    <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-20 p-2">
-                        <a href="/watch/${item.id}" class="w-10 h-10 rounded-full btn-action-play text-white flex items-center justify-center shadow-glow-primary hover:scale-110 transition-transform" title="Lanjutkan Menonton">
-                            <i class="fa-solid fa-play text-xs pl-0.5"></i>
-                        </a>
-                        <button onclick="openSecureNewTab('${item.video_url || item.videoUrl || item.direct_url || item.source_url || ''}', event);" 
-                                class="px-3 py-1 rounded-xl btn-action-glass text-slate-200 hover:text-white text-[10px] font-bold shadow-md transition-all flex items-center gap-1.5 group/src" 
-                                title="Buka link video di tab baru (Open in New Tab)">
-                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-300 group-hover/src:text-white"></i>
-                            <span>Open Source</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="p-3 space-y-1">
-                    <h4 class="text-xs font-bold text-[#F8FAFC] group-hover:text-purple-300 transition line-clamp-1">${item.display_title}</h4>
-                    <div class="flex items-center justify-between text-[10px] text-stream-muted">
-                        <span class="text-stream-accent font-mono font-bold">${item.progressTime || '04:20'} / ${item.duration || '15:00'}</span>
-                        <div class="flex items-center gap-1.5">
-                            <button onclick="openSecureNewTab('${item.video_url || item.videoUrl || item.direct_url || item.source_url || ''}', event);" class="p-1 text-slate-300 hover:text-white transition" title="Buka link video di tab baru">
-                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                            </button>
-                            <button onclick="removeHistoryItem(${item.id})" class="p-1 text-slate-400 hover:text-rose-400 transition" title="Hapus dari riwayat">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `).join("");
-    }
-
-    function removeHistoryItem(id) {
-        let history = JSON.parse(localStorage.getItem("streamvault_history")) || [];
-        history = history.filter(h => h.id != id);
-        localStorage.setItem("streamvault_history", JSON.stringify(history));
-        loadContinueWatching();
-    }
-
-    // Sync all card duration pills from cache & watch history
-    function syncCardDurations() {
-        try {
-            // Check direct cached video durations
-            document.querySelectorAll(".card-duration-pill").forEach(el => {
-                const vId = el.getAttribute("data-video-id");
-                if (vId) {
-                    const cached = localStorage.getItem("streamvault_dur_" + vId);
-                    if (cached && cached !== "00:00") {
-                        el.textContent = cached;
-                    }
-                }
-            });
-
-            // Check history for played durations
-            const history = JSON.parse(localStorage.getItem("streamvault_history")) || [];
-            history.forEach(item => {
-                if (item.id && item.duration && item.duration !== "00:00") {
-                    document.querySelectorAll(`.card-duration-pill[data-video-id="${item.id}"]`).forEach(el => {
-                        el.textContent = item.duration;
-                    });
-                }
-            });
-        } catch(e) {}
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        const savedLayout = localStorage.getItem("streamvault_layout") || "wide";
-        setLayout(savedLayout);
-        loadContinueWatching();
-        syncCardDurations();
-    });
+    // Safe JSON Data Registration (Prevents HTML Attribute Quoting Bugs)
+    window.featuredVideosData = {{ (featured_videos or [])|tojson|safe }};
+    window.pageVideosData = {{ (videos or [])|tojson|safe }};
+    
+    // Register all videos in window.videoDataStore for instant ID lookup
+    (window.featuredVideosData || []).forEach(v => { if (v && v.id) window.videoDataStore[v.id] = v; });
+    (window.pageVideosData || []).forEach(v => { if (v && v.id) window.videoDataStore[v.id] = v; });
+    {% if trending_videos %}
+    ({{ trending_videos|tojson|safe }}).forEach(v => { if (v && v.id) window.videoDataStore[v.id] = v; });
+    {% endif %}
+    {% if recent_videos %}
+    ({{ recent_videos|tojson|safe }}).forEach(v => { if (v && v.id) window.videoDataStore[v.id] = v; });
+    {% endif %}
+    {% if recommended_videos %}
+    ({{ recommended_videos|tojson|safe }}).forEach(v => { if (v && v.id) window.videoDataStore[v.id] = v; });
+    {% endif %}
 </script>
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
 {% endblock %}
