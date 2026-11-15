@@ -3,7 +3,7 @@
 import unittest
 from app.utils.embed import format_embed_url
 from app.utils.helpers import extract_v_page, hero_rank_key, safe_int
-from app.services.scraper_service import get_base_thread_url, is_video_link
+from app.services.scraper_service import get_base_thread_url, is_video_link, extract_videos_from_html
 from app.models.video import register_video_item
 
 
@@ -82,5 +82,72 @@ class ServicesTestCase(unittest.TestCase):
         self.assertIn("rating", item)
 
 
+
+    def test_dom_proximity_pairing_interleaved(self):
+        """Test that videos for Model A get Model A's image, and Model B get Model B's image."""
+        sample_html = '''
+        <div class="message" id="post-101">
+            <div class="message-name"><span class="username">MasterUploader</span></div>
+            <div class="message-body">
+                <div class="bbWrapper">
+                    Model Lauramana<br>
+                    <img src="https://example.com/lauramana.jpg" class="bbImage"><br>
+                    <a href="https://vidara.to/v/laura1">Link Laura 1</a><br>
+                    <a href="https://vidara.to/v/laura2">Link Laura 2</a><br>
+                    <br>
+                    Model Sherly<br>
+                    <img src="https://example.com/sherly.jpg" class="bbImage"><br>
+                    <a href="https://vidara.to/v/sherly1">Link Sherly 1</a><br>
+                    <a href="https://vidara.to/v/sherly2">Link Sherly 2</a>
+                </div>
+            </div>
+        </div>
+        '''
+        results = extract_videos_from_html(sample_html, "https://example.com/page-1")
+        self.assertEqual(len(results), 4)
+        self.assertEqual(results[0]["video_url"], "https://vidara.to/v/laura1")
+        self.assertEqual(results[0]["image_url"], "https://example.com/lauramana.jpg")
+        self.assertEqual(results[1]["video_url"], "https://vidara.to/v/laura2")
+        self.assertEqual(results[1]["image_url"], "https://example.com/lauramana.jpg")
+        self.assertEqual(results[2]["video_url"], "https://vidara.to/v/sherly1")
+        self.assertEqual(results[2]["image_url"], "https://example.com/sherly.jpg")
+        self.assertEqual(results[3]["video_url"], "https://vidara.to/v/sherly2")
+        self.assertEqual(results[3]["image_url"], "https://example.com/sherly.jpg")
+
+    def test_dom_proximity_pairing_batch_and_smilies(self):
+        """Test that batch images pair 1:1 with batch videos, and smilies/quotes are ignored."""
+        sample_html = '''
+        <div class="message" id="post-102">
+            <div class="message-name"><span class="username">Zupazup</span></div>
+            <div class="message-body">
+                <div class="bbWrapper">
+                    <blockquote class="bbCodeBlock--quote">
+                        Quoted User said:<br>
+                        <img src="https://example.com/old_quote.jpg">
+                        <a href="https://vidara.to/v/old_quoted_vid">Old Link</a>
+                    </blockquote>
+                    <img src="https://example.com/smilies/fire.gif" class="smilie"> Halo suhu:<br>
+                    <img src="https://example.com/pic1.jpg" class="bbImage">
+                    <img src="https://example.com/pic2.jpg" class="bbImage">
+                    <br>
+                    <a href="https://vidara.to/v/new_vid1">Vid 1</a><br>
+                    <a href="https://vidara.to/v/new_vid2">Vid 2</a>
+                </div>
+            </div>
+        </div>
+        '''
+        results = extract_videos_from_html(sample_html, "https://example.com/page-1")
+        self.assertEqual(len(results), 2)
+        # Quoted vid must not be extracted
+        urls = [r["video_url"] for r in results]
+        self.assertNotIn("https://vidara.to/v/old_quoted_vid", urls)
+        # Smilie must not contaminate image_url
+        self.assertEqual(results[0]["image_url"], "https://example.com/pic1.jpg")
+        self.assertEqual(results[0]["video_url"], "https://vidara.to/v/new_vid1")
+        self.assertEqual(results[1]["image_url"], "https://example.com/pic2.jpg")
+        self.assertEqual(results[1]["video_url"], "https://vidara.to/v/new_vid2")
+
+
 if __name__ == "__main__":
+
     unittest.main()

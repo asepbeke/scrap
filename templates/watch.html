@@ -76,7 +76,8 @@
 
                 <!-- Right: Open Source in New Tab, AdBlock Mode & Reload Controls -->
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event)" 
+                    <button type="button" onclick="openSecureNewTab(this.dataset.url, event)" 
+                            data-url="{{ video.video_url or video.videoUrl or video.direct_url }}"
                             class="px-3 py-1.5 rounded-xl btn-action-glass text-slate-200 hover:text-white text-xs transition flex items-center gap-1.5 shadow-sm group font-semibold" 
                             title="Buka link video di tab baru (Open in New Tab)">
                         <i class="fa-solid fa-arrow-up-right-from-square text-slate-300 group-hover:text-white transition-colors text-[11px]"></i>
@@ -102,7 +103,8 @@
                 <div id="floatingPlayerToolbar" 
                      class="absolute top-4 right-4 z-40 flex items-center gap-2 p-1.5 rounded-2xl bg-[#0D111B]/80 backdrop-blur-[16px] border border-white/[0.08] shadow-2xl transition-all duration-300 opacity-90 group-hover:opacity-100 hover:opacity-100">
                     <!-- Open Original Source -->
-                    <button type="button" onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event)" 
+                    <button type="button" onclick="openSecureNewTab(this.dataset.url, event)" 
+                            data-url="{{ video.video_url or video.videoUrl or video.direct_url }}"
                             class="h-9 px-3.5 rounded-xl btn-action-glass text-slate-200 hover:text-white text-xs font-semibold flex items-center gap-2 transition shadow-sm group/btn" 
                             title="Open original source in new tab">
                         <i class="fa-solid fa-arrow-up-right-from-square text-slate-300 group-hover/btn:text-white text-xs transition-colors"></i>
@@ -235,7 +237,8 @@
                                 </span>
 
                                 <!-- Open Source in New Tab button inside player -->
-                                <button type="button" onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event)" 
+                                <button type="button" onclick="openSecureNewTab(this.dataset.url, event)" 
+                                        data-url="{{ video.video_url or video.videoUrl or video.direct_url }}"
                                         class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition text-stream-cyan" 
                                         title="Buka link video di tab baru (Open in New Tab)" aria-label="Open original source">
                                     <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
@@ -350,7 +353,8 @@
                     </button>
 
                     <!-- Secondary Action: Open Source in New Tab -->
-                    <button type="button" onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event)" 
+                    <button type="button" onclick="openSecureNewTab(this.dataset.url, event)" 
+                            data-url="{{ video.video_url or video.videoUrl or video.direct_url }}"
                             class="h-12 px-5 rounded-full btn-action-glass font-bold text-xs sm:text-sm flex items-center justify-center gap-2 group text-slate-200 hover:text-white" 
                             title="Open original source in new tab">
                         <i class="fa-solid fa-arrow-up-right-from-square text-slate-300 group-hover:text-white text-xs transition-colors"></i>
@@ -365,14 +369,16 @@
                     </button>
 
                     <!-- Share / Copy Link Icon Button -->
-                    <button type="button" onclick="copyWatchLink('{{ video.video_url }}')" 
+                    <button type="button" onclick="copyWatchLink(this.dataset.url)" 
+                            data-url="{{ video.video_url }}"
                             class="w-11 h-11 rounded-full btn-action-tertiary text-slate-300 hover:text-white flex items-center justify-center group" 
                             title="Salin Link Video" aria-label="Salin Link Video">
                         <i class="fa-regular fa-share-from-square text-sm group-hover:scale-110 transition-transform"></i>
                     </button>
 
                     <!-- Copy Video URL Button -->
-                    <button type="button" onclick="copyWatchLink('{{ video.video_url }}')" 
+                    <button type="button" onclick="copyWatchLink(this.dataset.url)" 
+                            data-url="{{ video.video_url }}"
                             class="h-12 px-4 rounded-full btn-action-glass text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 group"
                             title="Salin Direct Stream URL">
                         <i class="fa-regular fa-copy text-sm text-slate-300 group-hover:text-white transition-colors"></i>
@@ -444,7 +450,8 @@
                             </a>
                             <div class="flex items-center justify-between text-[10px] text-stream-muted">
                                 <span class="truncate">@{{ r_vid.username }} • <span class="uppercase font-bold text-stream-primary">{{ r_vid.provider }}</span></span>
-                                <button type="button" onclick="openSecureNewTab('{{ r_vid.video_url or r_vid.videoUrl or r_vid.direct_url }}', event);" 
+                                <button type="button" onclick="openSecureNewTab(this.dataset.url, event);" 
+                                        data-url="{{ r_vid.video_url or r_vid.videoUrl or r_vid.direct_url }}"
                                         class="p-1 text-slate-400 hover:text-white transition" 
                                         title="Buka link video di tab baru (Open in New Tab)" aria-label="Open original source">
                                     <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
@@ -537,16 +544,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
-    // Safe Watch Config & Active Video Registration
-    window.currentWatchVideo = {{ video|tojson|safe }};
-    window.watchConfig = {
-        embedUrl: "{{ video.embed_url }}",
-        directUrl: "{{ video.direct_url }}"
-    };
-    if (window.currentWatchVideo && window.currentWatchVideo.id) {
-        window.videoDataStore[window.currentWatchVideo.id] = window.currentWatchVideo;
-    }
-</script>
+<!-- Data Payload (application/json prevents IDE JavaScript linter syntax errors) -->
+<script type="application/json" id="watchVideoData">{{ (video or {})|tojson|safe }}</script>
 <script src="{{ url_for('static', filename='js/watch.js') }}"></script>
 {% endblock %}

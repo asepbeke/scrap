@@ -6,6 +6,44 @@
 // Global Hero State
 let currentHeroIndex = 0;
 
+// Helper to safely parse JSON from script tags
+function parseJsonElement(id) {
+    const el = document.getElementById(id);
+    if (!el || !el.textContent || !el.textContent.trim()) return [];
+    try {
+        return JSON.parse(el.textContent);
+    } catch (e) {
+        return [];
+    }
+}
+
+// Initialize video data store from application/json payloads
+function initIndexDataStore() {
+    window.videoDataStore = window.videoDataStore || {};
+    window.featuredVideosData = parseJsonElement("featuredVideosData");
+    window.pageVideosData = parseJsonElement("pageVideosData");
+    const trending = parseJsonElement("trendingVideosData");
+    const recent = parseJsonElement("recentVideosData");
+    const recommended = parseJsonElement("recommendedVideosData");
+
+    const allCollections = [
+        ...(window.featuredVideosData || []),
+        ...(window.pageVideosData || []),
+        ...(Array.isArray(trending) ? trending : []),
+        ...(Array.isArray(recent) ? recent : []),
+        ...(Array.isArray(recommended) ? recommended : [])
+    ];
+
+    allCollections.forEach(v => {
+        if (v && v.id) {
+            window.videoDataStore[v.id] = v;
+        }
+    });
+}
+
+// Run store initialization
+initIndexDataStore();
+
 // Horizontal row scrolling helper
 function scrollRow(rowId, direction) {
     const row = document.getElementById(rowId);
@@ -48,6 +86,8 @@ function shareCurrentHeroVideo() {
 }
 
 function switchHeroSlideByIndex(index) {
+    index = parseInt(index, 10);
+    if (isNaN(index)) return;
     const list = getHeroList();
     if (!list || list.length <= index) return;
     currentHeroIndex = index;
@@ -288,6 +328,7 @@ function syncCardDurations() {
 
 // Initialize on DOM ready
 document.addEventListener("DOMContentLoaded", () => {
+    initIndexDataStore();
     const savedLayout = localStorage.getItem("streamvault_layout") || "wide";
     setLayout(savedLayout);
     loadContinueWatching();

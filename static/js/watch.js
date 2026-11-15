@@ -9,6 +9,30 @@ let hlsInstance = null;
 let controlsHideTimeout = null;
 let toolbarHideTimeout = null;
 
+// Parse video data safely from application/json payload
+function initWatchData() {
+    window.videoDataStore = window.videoDataStore || {};
+    const el = document.getElementById("watchVideoData");
+    if (el && el.textContent && el.textContent.trim()) {
+        try {
+            window.currentWatchVideo = JSON.parse(el.textContent);
+            if (window.currentWatchVideo) {
+                window.watchConfig = {
+                    embedUrl: window.currentWatchVideo.embed_url || "",
+                    directUrl: window.currentWatchVideo.direct_url || ""
+                };
+                if (window.currentWatchVideo.id) {
+                    window.videoDataStore[window.currentWatchVideo.id] = window.currentWatchVideo;
+                }
+            }
+        } catch (e) {
+            console.error("Error parsing watch video data:", e);
+        }
+    }
+}
+
+initWatchData();
+
 // =========================================================================
 // PLAYER SWITCHING LOGIC (Embed / Direct / Native HLS)
 // =========================================================================
@@ -397,6 +421,7 @@ document.addEventListener("keydown", (e) => {
 
 // Auto-hide floating action toolbar & controls overlay on mouse inactivity
 document.addEventListener("DOMContentLoaded", () => {
+    initWatchData();
     const cinemaWrapper = document.getElementById("cinemaWrapper");
     if (cinemaWrapper) {
         cinemaWrapper.addEventListener("mousemove", () => {

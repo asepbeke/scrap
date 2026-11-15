@@ -9,6 +9,7 @@ import re
 import socket
 from urllib.parse import urlparse
 from typing import Any, Dict, List, Optional
+from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
 from config import THREADS, VIDEO_HOSTS, VIDEO_KEYWORDS
@@ -95,74 +96,160 @@ def get_latest_page_number(page) -> int:
     return max(page_numbers) if page_numbers else 1
 
 
-def extract_videos_from_page(page) -> List[Dict[str, Any]]:
-    """Extract post metadata, image thumbnails, and video URLs from a thread page."""
+def extract_videos_from_html(html: str, page_url: str = "") -> List[Dict[str, Any]]:
+    """Extract post metadata, image thumbnails, and video URLs from forum page HTML.
+
+    Guarantees accurate image_url -> video_url pairing via sequential DOM proximity:
+    1. Strips all quote blocks (.bbCodeBlock--quote, blockquote) and signatures.
+    2. Filters out smilies, avatars, and irrelevant icons.
+    3. Traverses DOM nodes in sequential document order.
+    4. Groups consecutive images and pairs them directly with the subsequent video links in that section.
+    """
+    soup = BeautifulSoup(html, "html.parser")
     results = []
-    posts = page.locator(".message")
-    total_posts = posts.count()
 
-    for i in range(total_posts):
-        post = posts.nth(i)
-        post_id = post.get_attribute("id") or f"post-{i+1}"
+    posts = soup.select(".message")
+    for post in posts:
+        post_id = post.get("id", "")
 
-        # Username extraction
-        username_elem = post.locator(".message-name .username, .username").first
-        username = username_elem.inner_text().strip() if username_elem.count() else "Unknown"
+        username_el = post.select_one(".message-name .username, .username")
+        username = username_el.get_text(strip=True) if username_el else "Unknown"
 
-        # Post title extraction
-        title_elem = post.locator(".message-subject, .post-title, h1, h2").first
-        post_title = title_elem.inner_text().strip() if title_elem.count() else ""
+        title_el = post.select_one(".message-subject, .post-title, h1, h2")
+        post_title = title_el.get_text(strip=True) if title_el else ""
 
-        # Content block and image attachments
-        content = post.locator(".bbWrapper")
-        if not content.count():
+        content = post.select_one(".message-body .bbWrapper")
+        if not content:
             continue
 
-        images = content.locator("img")
-        img_urls = []
-        for img_idx in range(images.count()):
-            img_tag = images.nth(img_idx)
-            src = (
-                img_tag.get_attribute("src")
-                or img_tag.get_attribute("data-src")
-                or img_tag.get_attribute("data-url")
-                or ""
-            )
-            if src and not src.startswith("data:"):
-                img_urls.append(src)
+        # Strip all quoted blocks and user signatures
+        for quote in content.select("blockquote, .bbCodeBlock--quote, .message-signature"):
+            quote.decompose()
 
-        anchors = content.locator("a[href]")
-        video_idx = 0
-        for j in range(anchors.count()):
-            anchor = anchors.nth(j)
-            url = anchor.get_attribute("href")
-            if not url or not url.startswith("http"):
+        # Sequentially collect images and video anchors in DOM order
+        elements = content.find_all(["img", "a"])
+        groups = []
+        current_imgs = []
+        current_vids = []
+
+        for el in elements:
+            if el.name == "img":
+                classes = el.get("class", [])
+                class_str = " ".join(classes) if isinstance(classes, list) else str(classes)
+
+                # Skip smilies, avatars, reaction icons
+                if "smilie" in class_str or el.get("data-shortname"):
+                    continue
+
+                src = (
+                    el.get("src")
+                    or el.get("data-src")
+                    or el.get("data-url")
+                    or el.get("data-original")
+                    or ""
+                )
+                if (
+                    not src
+                    or src.startswith("data:")
+                    or "/smilies/" in src
+                    or "/styles/" in src
+                    or "/avatars/" in src
+                ):
+                    continue
+
+                # When a new image appears after videos, start a new segment/group
+                if current_vids:
+                    groups.append((current_imgs, current_vids))
+                    current_imgs = []
+                    current_vids = []
+
+                current_imgs.append(src)
+
+            elif el.name == "a":
+                href = el.get("href") or ""
+                if is_video_link(href):
+                    text = el.get_text(strip=True)
+                    current_vids.append((href, text))
+
+        if current_imgs or current_vids:
+            groups.append((current_imgs, current_vids))
+
+        # Perform proximity pairing for each group
+        pending_vids = []
+        first_img_seen = ""
+
+        for imgs, vids in groups:
+            if imgs and not first_img_seen:
+                first_img_seen = imgs[0]
+
+            if not imgs and vids:
+                # Video appeared before any preceding image in this post
+                pending_vids.extend(vids)
                 continue
 
-            if is_video_link(url):
-                matched_img = (
-                    img_urls[video_idx]
-                    if video_idx < len(img_urls)
-                    else (img_urls[0] if img_urls else "")
-                )
-                video_idx += 1
+            # If there were videos waiting for an image, associate them with current batch
+            if imgs and pending_vids:
+                for p_href, p_text in pending_vids:
+                    results.append({
+                        "post_id": post_id,
+                        "username": username,
+                        "post_title": post_title,
+                        "image_url": imgs[0],
+                        "video_url": p_href,
+                        "provider": urlparse(p_href).hostname or "",
+                        "link_name": p_text,
+                        "source_page": page_url
+                    })
+                pending_vids = []
+
+            # Pair videos in this group with the group preceding images
+            for idx, (v_href, v_text) in enumerate(vids):
+                if imgs:
+                    matched_img = imgs[idx] if idx < len(imgs) else imgs[-1]
+                else:
+                    matched_img = first_img_seen
 
                 results.append({
                     "post_id": post_id,
                     "username": username,
                     "post_title": post_title,
                     "image_url": matched_img,
-                    "video_url": url,
-                    "provider": urlparse(url).hostname or "",
-                    "link_name": anchor.inner_text().strip(),
-                    "source_page": page.url
+                    "video_url": v_href,
+                    "provider": urlparse(v_href).hostname or "",
+                    "link_name": v_text,
+                    "source_page": page_url
                 })
+
+        # Fallback for remaining pending videos
+        for p_href, p_text in pending_vids:
+            results.append({
+                "post_id": post_id,
+                "username": username,
+                "post_title": post_title,
+                "image_url": first_img_seen,
+                "video_url": p_href,
+                "provider": urlparse(p_href).hostname or "",
+                "link_name": p_text,
+                "source_page": page_url
+            })
 
     # Deduplicate by video_url on this page
     unique = {}
     for item in results:
         unique[item["video_url"]] = item
     return list(unique.values())
+
+
+def extract_videos_from_page(page) -> List[Dict[str, Any]]:
+    """Extract post metadata, image thumbnails, and video URLs from a thread page."""
+    try:
+        html = page.content()
+        page_url = getattr(page, "url", "")
+        return extract_videos_from_html(html, page_url)
+    except Exception as e:
+        logger.error("Failed to extract videos from page: %s", e)
+        return []
+
 
 
 def is_cdp_ready(host: str = "127.0.0.1", port: int = 9222, timeout: float = 0.8) -> bool:
