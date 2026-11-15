@@ -1,0 +1,1038 @@
+{% extends "base.html" %}
+
+{% block title %}{{ video.display_title }} - StreamVault Player{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Fullscreen & Theater mode adjustments */
+    body.theater-mode {
+        background-color: #000000 !important;
+    }
+    body.theater-mode header,
+    body.theater-mode footer,
+    body.theater-mode #sidebarRelated {
+        opacity: 0.15;
+        transition: opacity 0.3s;
+    }
+    body.theater-mode header:hover,
+    body.theater-mode footer:hover,
+    body.theater-mode #sidebarRelated:hover {
+        opacity: 1;
+    }
+    body.theater-mode #playerWrapper {
+        max-width: 100% !important;
+        grid-column: span 3 / span 3 !important;
+    }
+
+    /* Ambient Cinema Ambilight Glow (Subtle Purple/Blue Radial) */
+    .ambient-glow {
+        position: absolute;
+        inset: -20px;
+        background: radial-gradient(circle at center, rgba(139, 92, 246, 0.22) 0%, rgba(59, 130, 246, 0.14) 40%, transparent 70%);
+        filter: blur(45px);
+        opacity: 0.65;
+        z-index: 0;
+        pointer-events-none;
+        transition: opacity 0.5s ease;
+    }
+
+    /* Scrub bar styling */
+    .scrub-track {
+        height: 6px;
+        transition: height 0.15s ease;
+    }
+    .scrub-track:hover {
+        height: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-10 py-6 space-y-6">
+
+    <!-- Top Navigation Breadcrumbs & Channel Link -->
+    <div class="flex items-center justify-between flex-wrap gap-3">
+        <a href="{{ url_for('index', thread=video.thread_key or active_thread, page=video.forum_page) }}" 
+           class="inline-flex items-center text-xs font-bold text-stream-muted hover:text-white transition bg-stream-card hover:bg-stream-cardHover border border-stream-borderLight px-4 py-2 rounded-xl shadow-sm group">
+            <i class="fa-solid fa-arrow-left mr-2 text-stream-primary group-hover:-translate-x-1 transition-transform"></i>
+            <span>Kembali ke Galeri ({{ video.thread_name or 'Thread' }} • Page {{ video.forum_page }})</span>
+        </a>
+
+        <div class="flex items-center gap-3 text-xs text-stream-muted">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stream-card border border-stream-borderLight">
+                <i class="fa-solid fa-folder-open text-stream-accent"></i>
+                <span class="text-slate-200 font-semibold">{{ video.thread_name or 'Thread' }}</span>
+            </span>
+            <button onclick="toggleTheaterMode()" class="px-3 py-1.5 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight transition flex items-center gap-1.5" title="Mode Bioskop (Gelapkan Lampu)">
+                <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                <span class="hidden sm:inline">Theater Mode</span>
+            </button>
+            <button onclick="openShortcutsModal()" class="px-3 py-1.5 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white border border-stream-borderLight transition flex items-center gap-1.5" title="Daftar Keyboard Shortcut">
+                <i class="fa-solid fa-keyboard text-stream-primary"></i>
+                <span class="hidden sm:inline">Shortcuts</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Cinema Player & Details Layout Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- ========================================================================= -->
+        <!-- MAIN CINEMA VIDEO PLAYER COLUMN (LEFT 2 COLS)                             -->
+        <!-- ========================================================================= -->
+        <div id="playerWrapper" class="lg:col-span-2 space-y-4">
+
+            <!-- Control Bar: AdBlock, Player Switcher & Reload -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-stream-surface border border-stream-borderLight rounded-2xl p-3 text-xs">
+                
+                <!-- Left: Player Mode Pills -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <div class="inline-flex rounded-xl bg-stream-bg border border-stream-borderLight p-1 text-xs">
+                        <!-- Player 1: Embed (Default for Vidara/Dood) -->
+                        <button id="btnPlayer1" onclick="switchPlayerMode('embed')" 
+                                class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-stream-primary to-stream-accent text-white font-bold transition flex items-center gap-1.5 shadow-glow-primary" title="Pemutar Resmi Embed (/e/)">
+                            <i class="fa-solid fa-film text-[10px]"></i>
+                            <span>Player 1 (Embed)</span>
+                        </button>
+                        <!-- Player 2: Direct URL Alternative -->
+                        <button id="btnPlayer2" onclick="switchPlayerMode('direct')" 
+                                class="px-3 py-1.5 rounded-lg text-stream-muted hover:text-white transition flex items-center gap-1.5" title="Pemutar Link Langsung (/v/)">
+                            <i class="fa-solid fa-link text-[10px]"></i>
+                            <span>Player 2 (Direct)</span>
+                        </button>
+                        <!-- Player 3: Native HLS / MP4 Cinema Engine -->
+                        <button id="btnPlayer3" onclick="switchPlayerMode('native')" 
+                                class="px-3 py-1.5 rounded-lg text-stream-muted hover:text-white transition flex items-center gap-1.5" title="Pemutar Native HLS & MP4">
+                            <i class="fa-solid fa-sliders text-[10px] text-stream-accent"></i>
+                            <span>Player 3 (HLS/MP4)</span>
+                        </button>
+                    </div>
+
+                    <!-- AdBlock Shielding Badge -->
+                    <span id="adblockBadge" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                        <span>Shield: Aktif</span>
+                    </span>
+                </div>
+
+                <!-- Right: Open Source in New Tab, AdBlock Mode & Reload Controls -->
+                <div class="flex items-center gap-2">
+                    <button onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event)" 
+                            class="px-3 py-1.5 rounded-xl btn-action-glass text-slate-200 hover:text-white text-xs transition flex items-center gap-1.5 shadow-sm group font-semibold" 
+                            title="Buka link video di tab baru (Open in New Tab)">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-slate-300 group-hover:text-white transition-colors text-[11px]"></i>
+                        <span>Open in New Tab</span>
+                    </button>
+                    <button onclick="reloadPlayer()" class="px-3 py-1.5 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white text-xs transition flex items-center gap-1.5 border border-stream-borderLight" title="Muat Ulang Pemutar">
+                        <i id="reloadIcon" class="fa-solid fa-rotate-right"></i>
+                        <span class="hidden sm:inline">Reload</span>
+                    </button>
+                    <button onclick="toggleAdblockShield()" class="px-3 py-1.5 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-300 hover:text-white text-xs transition flex items-center gap-1.5 border border-stream-borderLight" title="Ganti Mode Sandbox">
+                        <i class="fa-solid fa-sliders text-stream-accent"></i>
+                        <span class="hidden sm:inline">Sandbox:</span> <strong id="shieldModeText" class="text-emerald-400">Ketat</strong>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cinema Player Container with Ambient Glow -->
+            <div id="cinemaWrapper" class="relative rounded-3xl overflow-hidden border border-stream-borderLight bg-black shadow-cinema group">
+                <!-- Ambient Backlight -->
+                <div id="ambientGlow" class="ambient-glow"></div>
+
+                <!-- Floating Luxury Action Toolbar (Auto-hiding on idle, visible on hover) -->
+                <div id="floatingPlayerToolbar" 
+                     class="absolute top-4 right-4 z-40 flex items-center gap-2 p-1.5 rounded-2xl bg-[#0D111B]/80 backdrop-blur-[16px] border border-white/[0.08] shadow-2xl transition-all duration-300 opacity-90 group-hover:opacity-100 hover:opacity-100">
+                    <!-- Open Original Source (Opens Video Link in New Tab) -->
+                    <button onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event)" 
+                            class="h-9 px-3.5 rounded-xl btn-action-glass text-slate-200 hover:text-white text-xs font-semibold flex items-center gap-2 transition shadow-sm group/btn" 
+                            title="Open original source in new tab">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-slate-300 group-hover/btn:text-white text-xs transition-colors"></i>
+                        <span class="hidden sm:inline">Open Source</span>
+                    </button>
+                    <!-- Picture-in-Picture -->
+                    <button onclick="togglePiP()" 
+                            class="w-9 h-9 rounded-xl btn-action-tertiary text-slate-300 hover:text-white flex items-center justify-center transition" 
+                            title="Picture-in-Picture">
+                        <i class="fa-regular fa-clone text-xs"></i>
+                    </button>
+                    <!-- Fullscreen Toggle -->
+                    <button onclick="toggleCinemaFullscreen()" 
+                            class="w-9 h-9 rounded-xl btn-action-tertiary text-slate-300 hover:text-white flex items-center justify-center transition" 
+                            title="Fullscreen">
+                        <i id="cinemaFullscreenIcon" class="fa-solid fa-expand text-xs"></i>
+                    </button>
+                    <!-- Settings (Sandbox & Shields) -->
+                    <button onclick="toggleAdblockShield()" 
+                            class="w-9 h-9 rounded-xl btn-action-tertiary text-slate-300 hover:text-white flex items-center justify-center transition" 
+                            title="Toggle AdBlock & Sandbox Settings">
+                        <i class="fa-solid fa-gear text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- ========================================================================= -->
+                <!-- ENGINE A: IFRAME CINEMA CONTAINER (EMBED & DIRECT PLAYER)                -->
+                <!-- ========================================================================= -->
+                <div id="iframePlayerContainer" class="aspect-video-box relative z-10">
+                    <iframe id="cinemaIframe" 
+                            src="{{ video.embed_url }}" 
+                            frameborder="0" 
+                            allowfullscreen 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
+                            class="w-full h-full"></iframe>
+                </div>
+
+                <!-- ========================================================================= -->
+                <!-- ENGINE B: NATIVE HTML5 & HLS.JS VIDEO PLAYER (WITH LUXURY CONTROLS)       -->
+                <!-- ========================================================================= -->
+                <div id="nativePlayerContainer" class="aspect-video-box relative z-10 hidden bg-black select-none group/player">
+                    
+                    <!-- Native HTML5 Video Element -->
+                    <video id="nativeVideo" 
+                           class="w-full h-full object-contain cursor-pointer"
+                           poster="{{ video.thumbnail_url or '/static/placeholder.svg' }}"
+                           playsinline
+                           preload="metadata">
+                        <!-- Direct fallback stream -->
+                        <source id="nativeVideoSource" src="{{ video.video_url }}" type="video/mp4">
+                    </video>
+
+                    <!-- Big Center Play Button Overlay -->
+                    <button id="bigCenterPlayBtn" onclick="togglePlay()" 
+                            class="absolute inset-0 m-auto w-20 h-20 rounded-full bg-stream-primary/80 hover:bg-stream-primary text-white flex items-center justify-center shadow-glow-primary hover:scale-110 transition-all z-20 backdrop-blur-sm">
+                        <i id="bigPlayIcon" class="fa-solid fa-play text-2xl pl-1"></i>
+                    </button>
+
+                    <!-- Custom Luxury Video Controls Overlay -->
+                    <div id="customControlsOverlay" 
+                         class="absolute inset-x-0 bottom-0 z-30 p-4 bg-gradient-to-t from-black via-black/70 to-transparent transition-opacity duration-300 opacity-100 space-y-2">
+                        
+                        <!-- Interactive Progress Scrub Bar -->
+                        <div class="relative w-full cursor-pointer py-2 group/scrub" id="progressContainer">
+                            <div class="scrub-track w-full bg-white/20 rounded-full overflow-hidden relative">
+                                <div id="bufferedProgressBar" class="absolute top-0 left-0 h-full bg-white/30 rounded-full transition-all" style="width: 0%;"></div>
+                                <div id="playProgressBar" class="absolute top-0 left-0 h-full bg-gradient-to-r from-stream-primary to-stream-cyan rounded-full" style="width: 0%;"></div>
+                            </div>
+                            <div id="scrubTooltip" class="absolute -top-7 hidden px-2 py-0.5 rounded text-[10px] font-mono bg-black/90 text-white border border-white/20 pointer-events-none -translate-x-1/2">
+                                00:00
+                            </div>
+                        </div>
+
+                        <!-- Control Buttons Row -->
+                        <div class="flex items-center justify-between text-white text-xs">
+                            
+                            <!-- Left Controls: Play, Prev, Next, Volume, Time -->
+                            <div class="flex items-center gap-3">
+                                <!-- Play/Pause Toggle -->
+                                <button onclick="togglePlay()" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition" title="Play/Pause (Space)">
+                                    <i id="controlPlayIcon" class="fa-solid fa-play text-sm"></i>
+                                </button>
+
+                                <!-- Prev Video -->
+                                {% if prev_video %}
+                                <a href="{{ url_for('watch', video_id=prev_video.id) }}" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-slate-300 hover:text-white transition" title="Video Sebelumnya: #{{ prev_video.id }}">
+                                    <i class="fa-solid fa-backward-step"></i>
+                                </a>
+                                {% endif %}
+
+                                <!-- Next Video -->
+                                {% if next_video %}
+                                <a href="{{ url_for('watch', video_id=next_video.id) }}" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-slate-300 hover:text-white transition" title="Video Berikutnya: #{{ next_video.id }}">
+                                    <i class="fa-solid fa-forward-step"></i>
+                                </a>
+                                {% endif %}
+
+                                <!-- Volume & Mute -->
+                                <div class="flex items-center gap-2 group/vol">
+                                    <button onclick="toggleMute()" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition" title="Mute/Unmute (M)">
+                                        <i id="controlVolumeIcon" class="fa-solid fa-volume-high"></i>
+                                    </button>
+                                    <input id="volumeSlider" type="range" min="0" max="1" step="0.05" value="1" 
+                                           class="w-16 sm:w-20 accent-stream-primary h-1 bg-white/30 rounded-lg cursor-pointer hidden group-hover/vol:block sm:block"
+                                           oninput="changeVolume(this.value)">
+                                </div>
+
+                                <!-- Time Display -->
+                                <div class="text-[11px] font-mono text-slate-300">
+                                    <span id="currentTimeDisplay">00:00</span> / <span id="durationTimeDisplay">00:00</span>
+                                </div>
+                            </div>
+
+                            <!-- Right Controls: Speed, Quality, PiP, Fullscreen -->
+                            <div class="flex items-center gap-2">
+                                
+                                <!-- Playback Speed Dropdown -->
+                                <div class="relative group/speed">
+                                    <button class="px-2 py-1 rounded-lg hover:bg-white/10 text-[11px] font-mono font-bold flex items-center gap-1">
+                                        <span id="speedDisplay">1.0x</span>
+                                    </button>
+                                    <div class="absolute right-0 bottom-full mb-2 hidden group-hover/speed:block bg-stream-card border border-stream-borderLight rounded-xl p-1 shadow-2xl z-40 space-y-1">
+                                        <button onclick="setPlaybackSpeed(0.5)" class="w-full px-3 py-1 rounded-lg text-left text-[11px] hover:bg-white/10">0.5x</button>
+                                        <button onclick="setPlaybackSpeed(0.75)" class="w-full px-3 py-1 rounded-lg text-left text-[11px] hover:bg-white/10">0.75x</button>
+                                        <button onclick="setPlaybackSpeed(1.0)" class="w-full px-3 py-1 rounded-lg text-left text-[11px] hover:bg-white/10 font-bold text-stream-cyan">1.0x (Normal)</button>
+                                        <button onclick="setPlaybackSpeed(1.25)" class="w-full px-3 py-1 rounded-lg text-left text-[11px] hover:bg-white/10">1.25x</button>
+                                        <button onclick="setPlaybackSpeed(1.5)" class="w-full px-3 py-1 rounded-lg text-left text-[11px] hover:bg-white/10">1.5x</button>
+                                        <button onclick="setPlaybackSpeed(2.0)" class="w-full px-3 py-1 rounded-lg text-left text-[11px] hover:bg-white/10">2.0x</button>
+                                    </div>
+                                </div>
+
+                                <!-- Quality Badge -->
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-stream-primary text-white font-mono">
+                                    {{ video.quality or '4K UHD' }}
+                                </span>
+
+                                <!-- Open Source in New Tab button inside player -->
+                                <button onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event)" 
+                                        class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition text-stream-cyan" 
+                                        title="Buka link video di tab baru (Open in New Tab)">
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                                </button>
+
+                                <!-- Picture in Picture -->
+                                <button onclick="togglePiP()" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition" title="Picture in Picture (P)">
+                                    <i class="fa-regular fa-clone text-xs"></i>
+                                </button>
+
+                                <!-- Fullscreen Toggle -->
+                                <button onclick="toggleFullscreen()" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition" title="Fullscreen (F)">
+                                    <i id="fullscreenIcon" class="fa-solid fa-expand text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Native Error Recovery State -->
+                    <div id="nativeErrorState" class="absolute inset-0 z-40 bg-stream-bg/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-3 hidden">
+                        <div class="w-14 h-14 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center text-xl shadow-glow-primary">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <h4 class="font-heading font-black text-lg text-white">Streaming Langsung Membutuhkan Iframe</h4>
+                        <p class="text-xs text-stream-muted max-w-md leading-relaxed">
+                            Provider ini melindungi stream dengan token anti-hotlinking. Silakan beralih ke <strong>Player 1 (Embed)</strong> untuk menonton tanpa hambatan.
+                        </p>
+                        <div class="flex items-center gap-2 pt-2">
+                            <button onclick="switchPlayerMode('embed')" class="px-4 py-2 rounded-xl bg-stream-primary text-white text-xs font-bold shadow-glow-primary hover:bg-stream-primaryHover transition">
+                                <i class="fa-solid fa-film mr-1.5"></i> Buka Player 1 (Embed)
+                            </button>
+                            <button onclick="retryNativePlay()" class="px-4 py-2 rounded-xl bg-stream-card text-slate-300 text-xs font-bold border border-stream-borderLight hover:text-white transition">
+                                <i class="fa-solid fa-rotate-right mr-1.5"></i> Coba Lagi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Direct Stream URL Input Bar (For Testing Custom MP4 / HLS Streams) -->
+            <div id="directStreamBar" class="hidden glass-panel p-3 rounded-2xl border border-stream-borderLight flex items-center gap-2 text-xs">
+                <i class="fa-solid fa-satellite-dish text-stream-cyan text-sm pl-1"></i>
+                <input id="customStreamInput" type="text" placeholder="Masukkan URL stream .m3u8 atau .mp4 langsung di sini..." 
+                       value="{{ video.video_url }}" 
+                       class="flex-1 bg-stream-bg border border-stream-borderLight text-white px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-stream-primary">
+                <button onclick="loadCustomStream()" class="px-4 py-2 rounded-xl bg-stream-cyan hover:bg-stream-cyanHover text-white font-bold transition flex items-center gap-1.5 shadow-glow-cyan">
+                    <span>Load Stream</span>
+                </button>
+            </div>
+
+            <!-- Video Information & Primary Action Bar -->
+            <div class="glass-panel rounded-3xl p-6 space-y-5">
+                
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="space-y-2 flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider
+                                {% if 'dood' in video.provider %}bg-blue-600/90 text-blue-50
+                                {% elif 'vidara.so' in video.provider %}bg-amber-600/90 text-amber-50
+                                {% else %}bg-stream-primary/90 text-white{% endif %}">
+                                {{ video.provider }}
+                            </span>
+                            <span class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-stream-cyan/20 text-stream-cyan font-mono">
+                                {{ video.quality or '4K UHD' }}
+                            </span>
+                            <span class="text-xs text-stream-muted font-mono">ID: #{{ video.id }}</span>
+                        </div>
+
+                        <h1 class="font-heading font-black text-xl sm:text-2xl lg:text-3xl text-white leading-tight">
+                            {{ video.display_title }}
+                        </h1>
+
+                        <div class="flex items-center gap-4 text-xs text-stream-muted pt-1">
+                            <span class="flex items-center gap-1.5 text-slate-300">
+                                <i class="fa-solid fa-user-circle text-stream-primary"></i>
+                                <span>@{{ video.username }}</span>
+                            </span>
+                            <span>•</span>
+                            <span class="font-mono text-emerald-400 font-bold">{{ video.rating or '4.9' }} ★ Match</span>
+                            <span>•</span>
+                            <span>{{ video.views or '24.5K' }} views</span>
+                        </div>
+                    </div>
+
+                    <!-- Previous & Next Navigation Buttons -->
+                    <div class="flex items-center gap-2">
+                        {% if prev_video %}
+                        <a href="{{ url_for('watch', video_id=prev_video.id) }}" 
+                           class="px-3.5 py-2 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-200 text-xs font-bold transition flex items-center gap-1.5 border border-stream-borderLight" title="Video Sebelumnya: #{{ prev_video.id }}">
+                            <i class="fa-solid fa-chevron-left"></i> Prev
+                        </a>
+                        {% endif %}
+                        {% if next_video %}
+                        <a href="{{ url_for('watch', video_id=next_video.id) }}" 
+                           class="px-3.5 py-2 rounded-xl bg-stream-card hover:bg-stream-cardHover text-slate-200 text-xs font-bold transition flex items-center gap-1.5 border border-stream-borderLight" title="Video Berikutnya: #{{ next_video.id }}">
+                            Next <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Premium VideoActionGroup: Watch/Mode, Open Source, Add to Favorites, Share -->
+                <div class="flex items-center gap-3 pt-5 border-t border-stream-borderLight flex-wrap">
+                    <!-- Primary Action: Switch/Toggle Mode -->
+                    <button onclick="switchPlayerMode(playerMode === 'native' ? 'embed' : 'native')" 
+                            class="h-12 px-6 rounded-full btn-action-play font-bold text-sm flex items-center justify-center gap-2.5 group shadow-glow-primary">
+                        <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-play text-white text-[10px] pl-0.5"></i>
+                        </div>
+                        <span>Ganti Mode Pemutar</span>
+                    </button>
+
+                    <!-- Secondary Action: Open Source in New Tab (Glassmorphism Pill) -->
+                    <button onclick="openSecureNewTab('{{ video.video_url or video.videoUrl or video.direct_url }}', event)" 
+                            class="h-12 px-5 rounded-full btn-action-glass font-bold text-xs sm:text-sm flex items-center justify-center gap-2 group text-slate-200 hover:text-white" 
+                            title="Open original source in new tab">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-slate-300 group-hover:text-white text-xs transition-colors"></i>
+                        <span>Open Source</span>
+                    </button>
+
+                    <!-- Add to Favorites Icon Button (44x44px touch target) -->
+                    <button id="btnWatchWatchlist" onclick="toggleWatchPlayerWatchlist()" 
+                            class="w-11 h-11 rounded-full btn-action-tertiary text-slate-300 hover:text-rose-400 flex items-center justify-center group" 
+                            title="Simpan ke Favorites">
+                        <i id="watchFavIcon" class="fa-regular fa-heart text-base text-rose-500 group-hover:scale-110 transition-transform"></i>
+                    </button>
+
+                    <!-- Share / Copy Link Icon Button (44x44px touch target) -->
+                    <button onclick="copyWatchLink('{{ video.video_url }}')" 
+                            class="w-11 h-11 rounded-full btn-action-tertiary text-slate-300 hover:text-white flex items-center justify-center group" 
+                            title="Salin Link Video">
+                        <i class="fa-regular fa-share-from-square text-sm group-hover:scale-110 transition-transform"></i>
+                    </button>
+
+                    <!-- Copy Video URL Button -->
+                    <button onclick="copyWatchLink('{{ video.video_url }}')" 
+                            class="h-12 px-4 rounded-full btn-action-glass text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 group"
+                            title="Salin Direct Stream URL">
+                        <i class="fa-regular fa-copy text-sm text-slate-300 group-hover:text-white transition-colors"></i>
+                        <span class="hidden md:inline">Salin Link Stream</span>
+                    </button>
+
+                    {% if video.source_page %}
+                    <!-- Open Forum Page Link (Glass Pill) -->
+                    <a href="{{ video.source_page }}" target="_blank" rel="noopener noreferrer" 
+                       class="h-12 px-4 rounded-full btn-action-glass text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 group ml-auto"
+                       title="Buka Halaman Forum Asli">
+                        <i class="fa-solid fa-comments text-amber-400 text-xs"></i>
+                        <span class="hidden sm:inline">Forum Asli</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- "Up Next" Autoplay Preview Card -->
+            {% if next_video %}
+            <div class="glass-panel rounded-2xl p-4 flex items-center justify-between gap-4 border border-stream-borderLight">
+                <div class="flex items-center gap-3 min-w-0">
+                    <a href="{{ url_for('watch', video_id=next_video.id) }}" class="w-20 h-14 rounded-xl overflow-hidden bg-black flex-shrink-0 relative">
+                        <img src="{{ next_video.thumbnail_url or '/static/placeholder.svg' }}" alt="{{ next_video.display_title }}" class="w-full h-full object-cover">
+                        <span class="absolute bottom-1 right-1 px-1 py-0.2 rounded text-[8px] font-mono bg-black/70 text-white font-bold">{{ next_video.duration or '12:00' }}</span>
+                    </a>
+                    <div class="min-w-0 space-y-0.5">
+                        <span class="text-[10px] font-bold text-stream-accent uppercase tracking-wider">Video Berikutnya:</span>
+                        <h4 class="text-xs font-bold text-white truncate">{{ next_video.display_title }}</h4>
+                        <p class="text-[10px] text-stream-muted">Oleh @{{ next_video.username }}</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('watch', video_id=next_video.id) }}" class="px-4 py-2 rounded-xl bg-gradient-to-r from-stream-primary to-stream-accent hover:opacity-95 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-glow-primary flex-shrink-0">
+                    <span>Putar Sekarang</span>
+                    <i class="fa-solid fa-play text-[10px]"></i>
+                </a>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- SIDEBAR: RELATED VIDEOS & RECOMMENDATIONS (RIGHT 1 COL)                   -->
+        <!-- ========================================================================= -->
+        <div id="sidebarRelated" class="space-y-6">
+            
+            <!-- Related Videos from Uploader / Thread -->
+            <div class="glass-panel rounded-3xl p-5 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-stream-borderLight">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-stream-primary text-sm"></i>
+                        <h3 class="font-heading font-black text-sm text-white uppercase tracking-wider">Video Terkait</h3>
+                    </div>
+                    <span class="text-[10px] text-stream-muted font-mono">{{ related_videos|length }} video</span>
+                </div>
+
+                <div class="space-y-3 max-h-[600px] overflow-y-auto no-scrollbar">
+                    {% for r_vid in related_videos %}
+                    <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-stream-card hover:bg-stream-cardHover border border-stream-borderLight transition group">
+                        <a href="{{ url_for('watch', video_id=r_vid.id) }}" class="w-24 h-16 rounded-xl overflow-hidden bg-black flex-shrink-0 relative">
+                            <img src="{{ r_vid.thumbnail_url or '/static/placeholder.svg' }}" alt="{{ r_vid.display_title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                            <span class="absolute bottom-1 right-1 px-1 py-0.2 rounded text-[8px] font-mono bg-black/75 text-white font-bold">
+                                {{ r_vid.duration or '14:20' }}
+                            </span>
+                        </a>
+                        <div class="flex-1 min-w-0 space-y-1">
+                            <a href="{{ url_for('watch', video_id=r_vid.id) }}" class="text-xs font-bold text-white group-hover:text-purple-300 transition line-clamp-2 leading-tight block">
+                                {{ r_vid.display_title }}
+                            </a>
+                            <div class="flex items-center justify-between text-[10px] text-stream-muted">
+                                <span class="truncate">@{{ r_vid.username }} • <span class="uppercase font-bold text-stream-primary">{{ r_vid.provider }}</span></span>
+                                <button onclick="openSecureNewTab('{{ r_vid.video_url or r_vid.videoUrl or r_vid.direct_url }}', event);" 
+                                        class="p-1 text-slate-400 hover:text-white transition" 
+                                        title="Buka link video di tab baru (Open in New Tab)">
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recommended Videos Carousel Card -->
+            {% if recommended_videos and recommended_videos|length > 0 %}
+            <div class="glass-panel rounded-3xl p-5 space-y-3">
+                <div class="flex items-center gap-2 pb-2 border-b border-stream-borderLight">
+                    <i class="fa-solid fa-sparkles text-stream-accent text-sm"></i>
+                    <h3 class="font-heading font-black text-sm text-white uppercase tracking-wider">Rekomendasi Lainnya</h3>
+                </div>
+
+                <div class="space-y-3">
+                    {% for rec in recommended_videos[:5] %}
+                    <a href="{{ url_for('watch', video_id=rec.id) }}" class="flex items-center gap-3 group">
+                        <div class="w-16 h-12 rounded-xl overflow-hidden bg-black flex-shrink-0">
+                            <img src="{{ rec.thumbnail_url or '/static/placeholder.svg' }}" alt="{{ rec.display_title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-semibold text-slate-200 group-hover:text-purple-300 transition truncate">{{ rec.display_title }}</div>
+                            <div class="text-[10px] text-stream-muted font-mono">{{ rec.quality or '4K' }} • {{ rec.duration or '12:00' }}</div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<!-- Keyboard Shortcuts Help Modal -->
+<div id="shortcutsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-black/80 backdrop-blur-md" onclick="closeShortcutsModal()"></div>
+    <div class="relative glass-panel rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stream-borderLight z-10 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-stream-borderLight">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-keyboard text-stream-primary text-lg"></i>
+                <h3 class="font-heading font-black text-lg text-white">Keyboard Shortcuts</h3>
+            </div>
+            <button onclick="closeShortcutsModal()" class="w-8 h-8 rounded-lg bg-stream-card text-slate-400 hover:text-white flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="space-y-2.5 text-xs text-slate-300 font-mono">
+            <div class="flex items-center justify-between py-1 border-b border-stream-borderLight/40">
+                <span>Play / Pause</span>
+                <kbd class="px-2 py-0.5 rounded bg-stream-card text-stream-accent font-bold border border-stream-borderLight">Space / K</kbd>
+            </div>
+            <div class="flex items-center justify-between py-1 border-b border-stream-borderLight/40">
+                <span>Layar Penuh (Fullscreen)</span>
+                <kbd class="px-2 py-0.5 rounded bg-stream-card text-stream-accent font-bold border border-stream-borderLight">F</kbd>
+            </div>
+            <div class="flex items-center justify-between py-1 border-b border-stream-borderLight/40">
+                <span>Mute / Suara</span>
+                <kbd class="px-2 py-0.5 rounded bg-stream-card text-stream-accent font-bold border border-stream-borderLight">M</kbd>
+            </div>
+            <div class="flex items-center justify-between py-1 border-b border-stream-borderLight/40">
+                <span>Mundur / Maju 5 Detik</span>
+                <kbd class="px-2 py-0.5 rounded bg-stream-card text-stream-accent font-bold border border-stream-borderLight">← / →</kbd>
+            </div>
+            <div class="flex items-center justify-between py-1 border-b border-stream-borderLight/40">
+                <span>Volume Naik / Turun</span>
+                <kbd class="px-2 py-0.5 rounded bg-stream-card text-stream-accent font-bold border border-stream-borderLight">↑ / ↓</kbd>
+            </div>
+            <div class="flex items-center justify-between py-1 border-b border-stream-borderLight/40">
+                <span>Picture in Picture</span>
+                <kbd class="px-2 py-0.5 rounded bg-stream-card text-stream-accent font-bold border border-stream-borderLight">P</kbd>
+            </div>
+            <div class="flex items-center justify-between py-1 border-b border-stream-borderLight/40">
+                <span>Buka Pencarian</span>
+                <kbd class="px-2 py-0.5 rounded bg-stream-card text-stream-accent font-bold border border-stream-borderLight">Ctrl + K</kbd>
+            </div>
+        </div>
+
+        <button onclick="closeShortcutsModal()" class="w-full py-2.5 rounded-xl bg-stream-card hover:bg-stream-cardHover text-white text-xs font-bold transition">
+            Mengerti
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const currentVideo = {{ video|tojson|safe }};
+    const embedUrl = "{{ video.embed_url }}";
+    const directUrl = "{{ video.direct_url }}";
+
+    let playerMode = "embed"; // "embed", "direct", "native"
+    let isShieldStrict = true;
+    let hlsInstance = null;
+    let controlsHideTimeout = null;
+
+    // Player Switching Logic
+    function switchPlayerMode(mode) {
+        playerMode = mode;
+        const iframeBox = document.getElementById("iframePlayerContainer");
+        const nativeBox = document.getElementById("nativePlayerContainer");
+        const directBar = document.getElementById("directStreamBar");
+        const iframe = document.getElementById("cinemaIframe");
+        const nativeVideo = document.getElementById("nativeVideo");
+
+        const btn1 = document.getElementById("btnPlayer1");
+        const btn2 = document.getElementById("btnPlayer2");
+        const btn3 = document.getElementById("btnPlayer3");
+
+        [btn1, btn2, btn3].forEach(b => {
+            b.classList.remove("bg-stream-primary", "text-white");
+            b.classList.add("text-stream-muted");
+        });
+
+        if (mode === "embed") {
+            btn1.classList.add("bg-stream-primary", "text-white");
+            btn1.classList.remove("text-stream-muted");
+            iframeBox.classList.remove("hidden");
+            nativeBox.classList.add("hidden");
+            directBar.classList.add("hidden");
+            iframe.src = embedUrl;
+            if (nativeVideo) nativeVideo.pause();
+            showToast("Player 1 (Embed) Aktif", "info");
+        } else if (mode === "direct") {
+            btn2.classList.add("bg-stream-primary", "text-white");
+            btn2.classList.remove("text-stream-muted");
+            iframeBox.classList.remove("hidden");
+            nativeBox.classList.add("hidden");
+            directBar.classList.add("hidden");
+            iframe.src = directUrl;
+            if (nativeVideo) nativeVideo.pause();
+            showToast("Player 2 (Direct) Aktif", "info");
+        } else if (mode === "native") {
+            btn3.classList.add("bg-stream-primary", "text-white");
+            btn3.classList.remove("text-stream-muted");
+            iframeBox.classList.add("hidden");
+            nativeBox.classList.remove("hidden");
+            directBar.classList.remove("hidden");
+            initNativePlayback(directUrl);
+            showToast("Player 3 (Native HLS/MP4) Aktif", "info");
+        }
+    }
+
+    // Native Player Engine & HLS Setup
+    function initNativePlayback(url) {
+        const video = document.getElementById("nativeVideo");
+        const errBox = document.getElementById("nativeErrorState");
+        errBox.classList.add("hidden");
+
+        if (hlsInstance) {
+            hlsInstance.destroy();
+            hlsInstance = null;
+        }
+
+        if (url.includes(".m3u8") && Hls.isSupported()) {
+            hlsInstance = new Hls({
+                enableWorker: true,
+                lowLatencyMode: true
+            });
+            hlsInstance.loadSource(url);
+            hlsInstance.attachMedia(video);
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, function () {
+                video.play().catch(e => console.log("Autoplay blocked:", e));
+            });
+            hlsInstance.on(Hls.Events.ERROR, function (event, data) {
+                if (data.fatal) {
+                    errBox.classList.remove("hidden");
+                }
+            });
+        } else {
+            // Normal MP4 / Direct Video Source
+            video.src = url;
+            video.load();
+            video.play().catch(e => {
+                console.log("Direct play notice:", e);
+                // If direct video fails because host requires embed:
+                if (!url.endsWith(".mp4") && !url.includes("blob:")) {
+                    errBox.classList.remove("hidden");
+                }
+            });
+        }
+    }
+
+    function retryNativePlay() {
+        const inp = document.getElementById("customStreamInput");
+        const url = inp ? inp.value.trim() : directUrl;
+        initNativePlayback(url);
+    }
+
+    function loadCustomStream() {
+        const inp = document.getElementById("customStreamInput");
+        if (inp && inp.value.trim()) {
+            switchPlayerMode("native");
+            initNativePlayback(inp.value.trim());
+            showToast("Memuat stream custom...", "info");
+        }
+    }
+
+    // Video Controls Logic
+    function togglePlay() {
+        const video = document.getElementById("nativeVideo");
+        const playIcon = document.getElementById("controlPlayIcon");
+        const bigPlayBtn = document.getElementById("bigCenterPlayBtn");
+        const bigPlayIcon = document.getElementById("bigPlayIcon");
+
+        if (video.paused) {
+            video.play();
+            playIcon.className = "fa-solid fa-pause text-sm";
+            bigPlayIcon.className = "fa-solid fa-pause text-2xl";
+            bigPlayBtn.classList.add("opacity-0", "pointer-events-none");
+        } else {
+            video.pause();
+            playIcon.className = "fa-solid fa-play text-sm";
+            bigPlayIcon.className = "fa-solid fa-play text-2xl pl-1";
+            bigPlayBtn.classList.remove("opacity-0", "pointer-events-none");
+        }
+    }
+
+    function toggleMute() {
+        const video = document.getElementById("nativeVideo");
+        const icon = document.getElementById("controlVolumeIcon");
+        const slider = document.getElementById("volumeSlider");
+
+        video.muted = !video.muted;
+        if (video.muted) {
+            icon.className = "fa-solid fa-volume-xmark text-rose-400";
+            slider.value = 0;
+        } else {
+            icon.className = "fa-solid fa-volume-high";
+            slider.value = video.volume || 1;
+        }
+    }
+
+    function changeVolume(val) {
+        const video = document.getElementById("nativeVideo");
+        const icon = document.getElementById("controlVolumeIcon");
+        video.volume = val;
+        video.muted = (val == 0);
+        if (val == 0) {
+            icon.className = "fa-solid fa-volume-xmark text-rose-400";
+        } else if (val < 0.5) {
+            icon.className = "fa-solid fa-volume-low";
+        } else {
+            icon.className = "fa-solid fa-volume-high";
+        }
+    }
+
+    function setPlaybackSpeed(speed) {
+        const video = document.getElementById("nativeVideo");
+        video.playbackRate = speed;
+        document.getElementById("speedDisplay").textContent = `${speed}x`;
+        showToast(`Kecepatan putar diatur ke ${speed}x`, "info");
+    }
+
+    function togglePiP() {
+        const video = document.getElementById("nativeVideo");
+        if (document.pictureInPictureElement) {
+            document.exitPictureInPicture();
+        } else if (document.pictureInPictureEnabled && video) {
+            video.requestPictureInPicture().catch(e => {
+                showToast("Picture in Picture tidak didukung", "error");
+            });
+        }
+    }
+
+    function toggleFullscreen() {
+        const player = document.getElementById("nativePlayerContainer");
+        const icon = document.getElementById("fullscreenIcon");
+        if (!document.fullscreenElement) {
+            player.requestFullscreen().then(() => {
+                icon.className = "fa-solid fa-compress text-sm";
+            });
+        } else {
+            document.exitFullscreen().then(() => {
+                icon.className = "fa-solid fa-expand text-sm";
+            });
+        }
+    }
+
+    function toggleCinemaFullscreen() {
+        const wrapper = document.getElementById("cinemaWrapper") || document.getElementById("nativePlayerContainer");
+        const icon = document.getElementById("cinemaFullscreenIcon");
+        if (!document.fullscreenElement) {
+            if (wrapper.requestFullscreen) {
+                wrapper.requestFullscreen().then(() => {
+                    if (icon) icon.className = "fa-solid fa-compress text-xs";
+                });
+            }
+        } else {
+            document.exitFullscreen().then(() => {
+                if (icon) icon.className = "fa-solid fa-expand text-xs";
+            });
+        }
+    }
+
+    function formatTime(seconds) {
+        if (isNaN(seconds)) return "00:00";
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // Auto-hide floating action toolbar & controls overlay on mouse inactivity
+    let toolbarHideTimeout = null;
+    const cinemaWrapper = document.getElementById("cinemaWrapper");
+    if (cinemaWrapper) {
+        cinemaWrapper.addEventListener("mousemove", () => {
+            const toolbar = document.getElementById("floatingPlayerToolbar");
+            if (toolbar) {
+                toolbar.classList.remove("opacity-0", "pointer-events-none");
+                toolbar.classList.add("opacity-90");
+                clearTimeout(toolbarHideTimeout);
+                toolbarHideTimeout = setTimeout(() => {
+                    if (!toolbar.matches(":hover")) {
+                        toolbar.classList.remove("opacity-90");
+                        toolbar.classList.add("opacity-0", "pointer-events-none");
+                    }
+                }, 2500);
+            }
+        });
+        cinemaWrapper.addEventListener("mouseleave", () => {
+            const toolbar = document.getElementById("floatingPlayerToolbar");
+            if (toolbar) {
+                clearTimeout(toolbarHideTimeout);
+                toolbar.classList.remove("opacity-90");
+                toolbar.classList.add("opacity-0", "pointer-events-none");
+            }
+        });
+    }
+
+    const nativeContainer = document.getElementById("nativePlayerContainer");
+    if (nativeContainer) {
+        nativeContainer.addEventListener("mousemove", () => {
+            const overlay = document.getElementById("customControlsOverlay");
+            overlay.classList.remove("opacity-0");
+            clearTimeout(controlsHideTimeout);
+            const video = document.getElementById("nativeVideo");
+            if (!video.paused) {
+                controlsHideTimeout = setTimeout(() => {
+                    overlay.classList.add("opacity-0");
+                }, 2500);
+            }
+        });
+    }
+
+    // Time update & Scrubbing
+    const nativeVideo = document.getElementById("nativeVideo");
+    if (nativeVideo) {
+        nativeVideo.addEventListener("timeupdate", () => {
+            const cur = nativeVideo.currentTime;
+            const dur = nativeVideo.duration || 1;
+            const percent = (cur / dur) * 100;
+
+            document.getElementById("playProgressBar").style.width = `${percent}%`;
+            document.getElementById("currentTimeDisplay").textContent = formatTime(cur);
+            document.getElementById("durationTimeDisplay").textContent = formatTime(dur);
+
+            // Save playback position to localStorage history
+            saveContinueWatching(cur, dur, percent);
+        });
+
+        nativeVideo.addEventListener("loadedmetadata", () => {
+            const dur = nativeVideo.duration;
+            if (dur && isFinite(dur) && dur > 0) {
+                const durStr = formatTime(dur);
+                document.getElementById("durationTimeDisplay").textContent = durStr;
+                try {
+                    localStorage.setItem("streamvault_dur_" + currentVideo.id, durStr);
+                } catch(e) {}
+            }
+        });
+
+        nativeVideo.addEventListener("progress", () => {
+            if (nativeVideo.buffered.length > 0) {
+                const bufferedEnd = nativeVideo.buffered.end(nativeVideo.buffered.length - 1);
+                const dur = nativeVideo.duration || 1;
+                document.getElementById("bufferedProgressBar").style.width = `${(bufferedEnd / dur) * 100}%`;
+            }
+        });
+    }
+
+    // Scrub bar click/drag handler
+    const progressContainer = document.getElementById("progressContainer");
+    if (progressContainer) {
+        progressContainer.addEventListener("click", (e) => {
+            const rect = progressContainer.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            const video = document.getElementById("nativeVideo");
+            video.currentTime = pos * (video.duration || 0);
+        });
+    }
+
+    // Save to Continue Watching history
+    function saveContinueWatching(currentTime, duration, percent) {
+        if (!currentVideo) return;
+        let history = [];
+        try {
+            history = JSON.parse(localStorage.getItem("streamvault_history")) || [];
+        } catch (e) {
+            history = [];
+        }
+
+        const idx = history.findIndex(h => h.id == currentVideo.id);
+        const entry = {
+            id: currentVideo.id,
+            display_title: currentVideo.display_title,
+            thumbnail_url: currentVideo.thumbnail_url,
+            provider: currentVideo.provider,
+            video_url: currentVideo.video_url || currentVideo.videoUrl || currentVideo.direct_url,
+            videoUrl: currentVideo.video_url || currentVideo.videoUrl || currentVideo.direct_url,
+            progressTime: formatTime(currentTime),
+            duration: formatTime(duration),
+            progressPercent: Math.round(percent),
+            timestamp: Date.now()
+        };
+
+        if (idx >= 0) {
+            history[idx] = entry;
+        } else {
+            history.unshift(entry);
+        }
+
+        // Keep top 20
+        history = history.slice(0, 20);
+        localStorage.setItem("streamvault_history", JSON.stringify(history));
+        try {
+            if (duration && duration > 0) {
+                localStorage.setItem("streamvault_dur_" + currentVideo.id, formatTime(duration));
+            }
+        } catch(e) {}
+    }
+
+    // AdBlock & Sandbox Shielding
+    function toggleAdblockShield() {
+        const iframe = document.getElementById("cinemaIframe");
+        const text = document.getElementById("shieldModeText");
+        isShieldStrict = !isShieldStrict;
+
+        if (isShieldStrict) {
+            iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation allow-forms");
+            text.textContent = "Ketat";
+            text.className = "text-emerald-400 font-bold";
+            showToast("Mode Shield Ketat: Pop-up iklan diblokir", "success");
+        } else {
+            iframe.removeAttribute("sandbox");
+            text.textContent = "Standar";
+            text.className = "text-amber-400 font-bold";
+            showToast("Mode Standar: Semua fitur iframe diizinkan", "info");
+        }
+        iframe.src = iframe.src;
+    }
+
+    function reloadPlayer() {
+        const icon = document.getElementById("reloadIcon");
+        icon.classList.add("fa-spin");
+        const iframe = document.getElementById("cinemaIframe");
+        iframe.src = iframe.src;
+        setTimeout(() => icon.classList.remove("fa-spin"), 1000);
+        showToast("Pemutar dimuat ulang", "info");
+    }
+
+    function toggleTheaterMode() {
+        document.body.classList.toggle("theater-mode");
+        const isTheater = document.body.classList.contains("theater-mode");
+        showToast(isTheater ? "Mode Bioskop Aktif" : "Mode Normal", "info");
+    }
+
+    function copyWatchLink(url) {
+        navigator.clipboard.writeText(url).then(() => {
+            showToast("Link video berhasil disalin!", "success");
+        });
+    }
+
+    function toggleWatchPlayerWatchlist() {
+        if (!currentVideo) return;
+        const fav = toggleWatchlistItem(currentVideo);
+        const icon = document.getElementById("watchFavIcon");
+        if (icon) {
+            icon.className = fav ? 
+                "fa-solid fa-heart text-base text-rose-500 group-hover:scale-110 transition-transform" : 
+                "fa-regular fa-heart text-base text-rose-500 group-hover:scale-110 transition-transform";
+        }
+    }
+
+    function openShortcutsModal() {
+        document.getElementById("shortcutsModal").classList.remove("hidden");
+    }
+    function closeShortcutsModal() {
+        document.getElementById("shortcutsModal").classList.add("hidden");
+    }
+
+    // Player Keyboard Shortcuts Listener
+    document.addEventListener("keydown", (e) => {
+        // Ignore if typing in an input
+        if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+
+        const video = document.getElementById("nativeVideo");
+
+        if (e.code === "Space" || e.key.toLowerCase() === "k") {
+            e.preventDefault();
+            if (playerMode === "native") togglePlay();
+        } else if (e.key.toLowerCase() === "f") {
+            e.preventDefault();
+            toggleFullscreen();
+        } else if (e.key.toLowerCase() === "m") {
+            e.preventDefault();
+            toggleMute();
+        } else if (e.key === "ArrowLeft" || e.key.toLowerCase() === "j") {
+            e.preventDefault();
+            if (video) video.currentTime = Math.max(0, video.currentTime - 5);
+        } else if (e.key === "ArrowRight" || e.key.toLowerCase() === "l") {
+            e.preventDefault();
+            if (video) video.currentTime = Math.min(video.duration || 0, video.currentTime + 5);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            if (video) changeVolume(Math.min(1, (video.volume || 1) + 0.1));
+        } else if (e.key === "ArrowDown") {
+            e.preventDefault();
+            if (video) changeVolume(Math.max(0, (video.volume || 1) - 0.1));
+        } else if (e.key.toLowerCase() === "p") {
+            e.preventDefault();
+            togglePiP();
+        } else if (e.key === "?") {
+            openShortcutsModal();
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Initial favorite state check
+        const icon = document.getElementById("watchFavIcon");
+        if (icon && currentVideo && isWatchlisted(currentVideo.id)) {
+            icon.className = "fa-solid fa-heart text-base text-rose-500 group-hover:scale-110 transition-transform";
+        }
+
+        // Record initial view in history
+        saveContinueWatching(1, currentVideo.duration_seconds || 600, 1);
+    });
+</script>
+{% endblock %}
