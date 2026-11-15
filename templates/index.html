@@ -631,6 +631,16 @@
                         </button>
                     </form>
                 </div>
+
+                {% if last_error %}
+                <div class="w-full text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3.5 py-2 rounded-xl flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-400 flex-shrink-0"></i>
+                        <span>{{ last_error }}</span>
+                    </div>
+                    <span class="text-[10px] text-amber-400/70 font-mono">Status Info</span>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Toolbar: Provider Filter Pills, Layout Switcher & Sort Selector -->
@@ -822,10 +832,19 @@
                 </div>
                 <h3 class="font-heading font-black text-xl text-white">Tidak Ada Video Ditemukan</h3>
                 <p class="text-xs text-stream-muted leading-relaxed">
-                    Kami tidak menemukan video yang cocok dengan filter atau kata kunci pencarian Anda pada halaman ini.
+                    {% if q %}
+                    Tidak ada video yang cocok dengan kata kunci <strong>"{{ q }}"</strong> pada saluran ini.
+                    {% elif selected_provider %}
+                    Tidak ada video dari provider <strong>"{{ selected_provider }}"</strong> pada halaman ini.
+                    {% else %}
+                    Halaman ini belum memuat video baru atau filter aktif tidak menemukan kecocokan.
+                    {% endif %}
                 </p>
-                <div class="pt-2">
-                    <a href="{{ url_for('index', thread=active_thread) }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-stream-primary text-white font-bold text-xs shadow-glow-primary hover:bg-stream-primaryHover transition">
+                <div class="pt-2 flex flex-wrap items-center justify-center gap-2">
+                    <a href="{{ url_for('index', thread=active_thread, page=current_forum_page, refresh=1) }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-stream-primary to-stream-accent text-white font-bold text-xs shadow-glow-primary hover:opacity-95 transition">
+                        <i class="fa-solid fa-rotate"></i> Scrape Ulang Halaman
+                    </a>
+                    <a href="{{ url_for('index', thread=active_thread) }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-stream-card hover:bg-stream-cardHover text-white font-bold text-xs border border-stream-borderLight transition">
                         <i class="fa-solid fa-arrow-rotate-left"></i> Reset Filter
                     </a>
                 </div>

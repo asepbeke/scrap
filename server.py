@@ -5,7 +5,7 @@ import time
 import hashlib
 from urllib.parse import urlparse
 from flask import Flask, render_template, request, jsonify, abort, send_from_directory, Response, redirect
-from scraper_old import scrape_live_page, THREADS
+from scraper import scrape_live_page, THREADS
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,9 +17,9 @@ URL_TO_ID = {}
 ID_TO_VIDEO = {}
 PAGE_CACHE = {}
 THREAD_LATEST = {
-    "live_show": 738,
+    "live_show": 741,
     "igo": 3016,
-    "req_live": 1624
+    "req_live": 1625
 }
 THREAD_TITLES = {
     "live_show": "Konten Live Show (Part 3)",
@@ -39,14 +39,63 @@ LAST_SCRAPE_ERROR = ""
 NEXT_ID = 1
 
 
+def save_videos_to_db(videos, thread_key="live_show"):
+    """Auto-upsert scraped videos into SQLite so database fallback is always fresh"""
+    if not videos:
+        return
+    cfg = THREADS.get(thread_key, THREADS["live_show"])
+    db_path = os.path.join(BASE_DIR, cfg["db_file"])
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS videos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                post_id TEXT,
+                username TEXT,
+                post_title TEXT,
+                image_url TEXT,
+                video_url TEXT UNIQUE,
+                provider TEXT,
+                link_name TEXT,
+                source_page TEXT,
+                created_at TEXT
+            )
+        ''')
+        for item in videos:
+            v_url = (item.get("video_url") or "").strip()
+            if not v_url:
+                continue
+            conn.execute('''
+                INSERT INTO videos (post_id, username, post_title, image_url, video_url, provider, link_name, source_page, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                ON CONFLICT(video_url) DO UPDATE SET
+                    post_title = CASE WHEN excluded.post_title != '' THEN excluded.post_title ELSE videos.post_title END,
+                    image_url = CASE WHEN excluded.image_url != '' THEN excluded.image_url ELSE videos.image_url END,
+                    source_page = CASE WHEN excluded.source_page != '' THEN excluded.source_page ELSE videos.source_page END
+            ''', (
+                item.get("post_id", ""),
+                item.get("username", "Unknown"),
+                item.get("post_title", ""),
+                item.get("image_url", "") or item.get("thumbnail_url", ""),
+                v_url,
+                item.get("provider", ""),
+                item.get("link_name", ""),
+                item.get("source_page", "")
+            ))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[DB Save Notice]: {e}")
+
+
 def format_embed_url(video_url, provider):
     if not video_url:
         return ""
     video_url = video_url.strip()
     provider = (provider or "").lower()
 
-    # Dood embedding (/d/ -> /e/)
-    if "dood" in provider or "dood" in video_url:
+    # Dood & Playmogo embedding (/d/ -> /e/)
+    if any(k in provider or k in video_url for k in ["dood", "playmogo"]):
         if "/d/" in video_url:
             return re.sub(r"/d/", "/e/", video_url)
         return video_url
@@ -201,10 +250,10 @@ def get_videos_from_db_fallback(target_page_num=None, thread_key="live_show"):
     p_rows = conn.execute("SELECT DISTINCT source_page FROM videos").fetchall()
     db_pages = []
     for r in p_rows:
-        m = re.search(r'page-(\\d+)', r[0] or "")
+        m = re.search(r'page-(\d+)', r[0] or "")
         if m:
             db_pages.append(int(m.group(1)))
-    db_pages.sort(reverse=True)
+    db_pages = sorted(list(set(db_pages)), reverse=True)
     latest_db_page = db_pages[0] if db_pages else def_page
 
     current_p = target_page_num if target_page_num else latest_db_page
@@ -214,7 +263,7 @@ def get_videos_from_db_fallback(target_page_num=None, thread_key="live_show"):
         (f"%page-{current_p}%",)
     ).fetchall()
 
-    if not rows and not target_page_num:
+    if not rows:
         rows = conn.execute("SELECT * FROM videos ORDER BY id DESC LIMIT 50").fetchall()
 
     items = []
@@ -224,7 +273,7 @@ def get_videos_from_db_fallback(target_page_num=None, thread_key="live_show"):
             items.append(v)
 
     conn.close()
-    return items, current_p, latest_db_page, db_pages
+    return items, current_p, latest_db_page, db_pages or [def_page]
 
 # Preload initial pool on startup for all threads
 for t_key in THREADS:
@@ -294,9 +343,19 @@ def index():
                 if reg_item:
                     live_videos.append(reg_item)
 
-            PAGE_CACHE[f"{req_thread}:{current_page_num}"] = live_videos
-            IS_LIVE_MODE = True
-            LAST_SCRAPE_ERROR = ""
+            if live_videos:
+                PAGE_CACHE[f"{req_thread}:{current_page_num}"] = live_videos
+                save_videos_to_db(live_videos, thread_key=req_thread)
+                IS_LIVE_MODE = True
+                LAST_SCRAPE_ERROR = ""
+            else:
+                # Scrape sukses tapi tidak menemukan video di halaman ini -> ambil dari DB cadangan
+                db_vids, _, _, db_pages = get_videos_from_db_fallback(req_page, thread_key=req_thread)
+                if db_vids:
+                    live_videos = db_vids
+                    available_pages = db_pages
+                IS_LIVE_MODE = True
+                LAST_SCRAPE_ERROR = f"Halaman {current_page_num} tidak memuat link video baru. Menampilkan data cadangan."
         except Exception as e:
             # Gagal koneksi CDP (misal Chrome belum dibuka) -> Fallback ke database
             IS_LIVE_MODE = False
@@ -319,9 +378,9 @@ def index():
     if req_thread == "igo":
         milestones = [1, 500, 1000, 1500, 2000, 2500, 3000, 3016]
     elif req_thread == "req_live":
-        milestones = [1, 200, 500, 800, 1000, 1200, 1500, 1624]
+        milestones = [1, 200, 500, 800, 1000, 1200, 1500, 1625]
     else:
-        milestones = [1, 50, 100, 200, 300, 500, 700, 738]
+        milestones = [1, 50, 100, 200, 300, 500, 700, 741]
 
     quick_milestones = [m for m in milestones if m < latest_known]
     if latest_known not in quick_milestones:
@@ -334,12 +393,23 @@ def index():
     if uploader_filter:
         filtered_videos = [v for v in filtered_videos if uploader_filter in (v.get("username") or "").lower()]
     if q_search:
-        filtered_videos = [
+        page_filtered = [
             v for v in filtered_videos
             if q_search in (v.get("display_title") or "").lower()
             or q_search in (v.get("username") or "").lower()
             or q_search in (v.get("post_id") or "").lower()
         ]
+        if page_filtered:
+            filtered_videos = page_filtered
+        else:
+            # Fallback search across all loaded videos for this thread
+            all_known_for_thread = [v for v in ID_TO_VIDEO.values() if v.get("thread_key") == req_thread]
+            filtered_videos = [
+                v for v in all_known_for_thread
+                if q_search in (v.get("display_title") or "").lower()
+                or q_search in (v.get("username") or "").lower()
+                or q_search in (v.get("post_id") or "").lower()
+            ]
 
     # Sorting
     if sort_order == "oldest":
@@ -633,7 +703,9 @@ def api_scrape():
             reg = register_video(item, data["current_page"], thread_key=req_thread)
             if reg:
                 v_list.append(reg)
-        PAGE_CACHE[f"{req_thread}:{data['current_page']}"] = v_list
+        if v_list:
+            PAGE_CACHE[f"{req_thread}:{data['current_page']}"] = v_list
+            save_videos_to_db(v_list, thread_key=req_thread)
         return jsonify({
             "status": "live",
             "thread": req_thread,
